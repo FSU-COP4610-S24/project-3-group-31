@@ -1,6 +1,4 @@
 // This part will read in the filesystem
-
-// read in a fat32 file system
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -15,11 +13,10 @@ FAT32FileSystem* readFAT32FileSystem(const char* filename) {
         return NULL;
     }
 
-    // Read the necessary data from the file and populate the FAT32FileSystem structure
+    // Read the necessary data from the file and populate the FAT32FileSystem struct
     FAT32FileSystem* fs = malloc(sizeof(FAT32FileSystem));
 
     fclose(file);
 
-    // Return the populated FAT32FileSystem structure
-    return NULL;
+    return fs;
 }
