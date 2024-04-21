@@ -1,5 +1,6 @@
 // This part will read in the filesystem
 #include "filesys.h"
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -14,7 +15,8 @@ FAT32FileSystem* readFAT32FileSystem(const char* filename) {
     }
 
     // Read the necessary data from the file and populate the FAT32FileSystem struct
-    FAT32FileSystem* fs = malloc(sizeof(FAT32FileSystem));
+    FAT32FileSystem* fs = (FAT32FileSystem*)malloc(sizeof(FAT32FileSystem));
+    readBootSector(fs);
 
     fclose(imageFile);
 
@@ -42,7 +44,8 @@ void readBootSector(FAT32FileSystem* fs) {
     fs->BPB_RootClus    = getBytes(44, 4);
     fs->BPB_FSInfo      = getBytes(48, 2);
     fs->BPB_BkBootSec   = getBytes(50, 2);
-    getBytestoChar(52, 12, fs->BPB_Reserved);
+    //fs->BPB_Reserved    = getBytes(52, 12);
+    (fs->BPB_Reserved)[2] = (fs->BPB_Reserved)[1] = (fs->BPB_Reserved)[0] = 0x0;
     fs->BS_DrvNum       = getBytes(64, 1);
     fs->BS_Reserved1    = getBytes(65, 1);
     fs->BS_BootSig      = getBytes(66, 1);
@@ -70,7 +73,7 @@ void getBytestoChar(unsigned int offset, unsigned int size, char* string)
 
 unsigned int makeBigEndian(unsigned char *array, int bytes) {
     unsigned int out = 0;
-    for(int i; i < bytes; i++) {
+    for(int i = 0; i < bytes; i++) {
         out +=(unsigned int)(array[i] << (i * 8)); 
     }
     return out;
