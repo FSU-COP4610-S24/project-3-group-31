@@ -35,3 +35,4 @@ void readBootSector(FAT32FileSystem* fs);
 unsigned int getBytes(unsigned int offset, unsigned int size);
 void getBytestoChar(unsigned int offset, unsigned int size, char* string);
 unsigned int makeBigEndian(unsigned char *array, int bytes);
+FAT32FileSystem* readFAT32FileSystem(const char* filename);
