@@ -31,4 +31,7 @@ typedef struct {
     unsigned int Signature_word;
 } FAT32FileSystem;
 
+void readBootSector(FAT32FileSystem* fs);
+unsigned int getBytes(unsigned int offset, unsigned int size);
+void getBytestoChar(unsigned int offset, unsigned int size, char* string);
 unsigned int makeBigEndian(unsigned char *array, int bytes);
