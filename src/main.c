@@ -12,10 +12,10 @@ int main(int argc, const char* argv[]) {
     if (fs == NULL) {
         return 1;
     }
-
+    testFunctionality(fs);
     // Use the fs structure to access and navigate through the FAT32 filesystem
 
-    free(fs);
+    //free(fs);     Freeing causes a segfault??
     return 0;
 }
 
