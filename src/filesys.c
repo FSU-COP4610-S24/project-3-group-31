@@ -18,6 +18,8 @@ FAT32FileSystem* readFAT32FileSystem(const char* filename) {
     FAT32FileSystem* fs = (FAT32FileSystem*)malloc(sizeof(FAT32FileSystem));
     readBootSector(fs);
 
+    // use mmap to map the file to memory
+
     fclose(imageFile);
 
     return fs;
