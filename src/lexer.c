@@ -1,15 +1,12 @@
 #include "lexer.h"
 #include "info.h"
+#include "navigate.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
 void lexer(FAT32FileSystem* fs, char* file)
 {
-	char* pwd;
-	int jobcount = 0;
-	char** lastThree = (char**)malloc(3 * sizeof(char));
-
 	while (1) {
 		// FIXME: Find a way to show path from inside filesystem
 		printf("%s/>", fs->BS_OEMName);
@@ -28,8 +25,14 @@ void lexer(FAT32FileSystem* fs, char* file)
             else if (strcmp(tokens->items[0], "info") == 0){
                 info(fs);
             }
+			else if(strcmp(tokens->items[0], "ls") == 0){
+				ls(fs);
+			}
+			else if(strcmp(tokens->items[0], "cd") == 0){
+				cd(fs, tokens->items[1]);
+			}
 			else{
-				printf("Command not '%s' found.", tokens->items[0]);
+				printf("Command not '%s' found.\n", tokens->items[0]);
 			}
         }
 		free(input);
