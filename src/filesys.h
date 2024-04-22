@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 typedef struct {
     // Add necessary fields to represent the format of the FAT32 filesystem
