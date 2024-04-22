@@ -40,3 +40,12 @@ void getBytestoChar(unsigned int offset, unsigned int size, char* string);
 unsigned int makeBigEndian(unsigned char *array, int bytes);
 void readCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer);
 unsigned int findDirectoryCluster(const void* buffer, const char* name);
+
+
+// Create stuff
+void writeCluster(FAT32FileSystem* fs, unsigned int cluster, const void* buffer);
+int checkExists(const char* name, FAT32FileSystem* fs);
+int allocateDirectoryEntry(const char* name, int isDir, FAT32FileSystem* fs);
+void updateFATTable(FAT32FileSystem* fs, unsigned int cluster);
+unsigned int readFATEntry(FAT32FileSystem* fs, unsigned int cluster);
+unsigned int getNextFreeCluster(FAT32FileSystem* fs);

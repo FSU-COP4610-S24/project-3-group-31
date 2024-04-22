@@ -31,6 +31,14 @@ void lexer(FAT32FileSystem* fs, char* file)
 			else if(strcmp(tokens->items[0], "cd") == 0){
 				cd(fs, tokens->items[1]);
 			}
+			else if (strcmp(tokens->items[0], "mkdir") == 0) {
+				if (tokens->size < 2) {
+					printf("Error: Missing directory name.\n");
+				}
+				else {
+					mkdir(fs, tokens->items[1]);
+				}
+			}
 			else{
 				printf("Command not '%s' found.\n", tokens->items[0]);
 			}
