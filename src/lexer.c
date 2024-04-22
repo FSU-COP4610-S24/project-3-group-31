@@ -5,13 +5,11 @@
 #include <stdio.h>
 #include <string.h>
 
-void lexer(FAT32FileSystem* fs, char* file)
+void lexer(FAT32FileSystem* fs)
 {
-	char* imageName;
-	getImageName(fs->filename, imageName);
 	while (1) {
 		// FIXME: Find a way to show path from inside filesystem
-		printf("%s/>", imageName);
+		printf("%s/>", fs->BS_OEMName);
 		// free(pwd);
 
 		char *input = get_input();

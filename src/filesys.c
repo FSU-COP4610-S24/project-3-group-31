@@ -158,7 +158,6 @@ int allocateDirectoryEntry(const char* name, int isDir, FAT32FileSystem* fs) {
     return -1;  // No space available
 }
 
-
 // Update the FAT table to allocate a cluster
 void updateFATTable(FAT32FileSystem* fs, unsigned int cluster) {
     // Assuming FAT is loaded into memory in fs->FAT

@@ -13,9 +13,8 @@ int main(int argc, const char* argv[]) {
     if (fs == NULL) {
         return 1;
     }
-    fs->filename = strdup(filename);
     // Use the fs structure to access and navigate through the FAT32 filesystem
-    lexer(fs, NULL);
+    lexer(fs);
 
     free(fs->filename);
     free(fs->imageFile);
