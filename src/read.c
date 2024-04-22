@@ -47,9 +47,10 @@ void openFile(FAT32FileSystem* fs, const char* filename, const char* mode) {
             strncpy(fs->openFileList[i].filename, formattedName, 11);
             fs->openFileList[i].mode = fileMode;
             fs->openFileList[i].cluster = getCurrCluster(fs);
+            fs->openFileList[i].fileCluster = fileCluster;
             fs->openFileList[i].offset = 0;
             fs->openFileList[i].inUse = true;
-            printf("File opened: %s at cluster %u\n", formattedName, getCurrCluster(fs));
+            printf("File opened: %s at cluster %u\n", formattedName, fileCluster);
             printf("File '%s' opened successfully in mode %s.\n", filename, mode);
             return;
         }
@@ -162,6 +163,64 @@ void lseek(FAT32FileSystem* fs, const char* filename, unsigned int offset) {
     printf("Error: File '%s' is not open or does not exist.\n", filename);
 }
 
+// Read doesn't work might be due to read file not calculating right spot to check or because the spot given in the first
+// place is wrong, I made it so that the file saves its own cluster but it hasn't made a huge diffenrence so im kinda lost
+
+void readCommand(FAT32FileSystem* fs, const char* filename, unsigned int size) {
+    char formattedName[12];
+    formatDirectoryName(formattedName, filename);
+
+    // Search for the file in the list of open files
+    for (int i = 0; i < MAX_OPEN_FILES; i++) {
+        if (fs->openFileList[i].inUse && strncmp(fs->openFileList[i].filename, formattedName, 11) == 0) {
+            // Check if file is opened for reading
+            if (!(fs->openFileList[i].mode == 1 || fs->openFileList[i].mode == 3)) { // Mode 1: Read-only, Mode 3: Read/Write
+                printf("Error: File '%s' is not open for reading.\n", filename);
+                return;
+            }
+
+            // Calculate the start cluster and convert the offset to the address
+            unsigned int startCluster = fs->openFileList[i].fileCluster;
+            unsigned int fileOffset = fs->openFileList[i].offset;
+            unsigned int bytesToRead = size;
+
+            // Read data from the file
+            unsigned char* buffer = malloc(bytesToRead);
+            if (!buffer) {
+                printf("Error: Unable to allocate memory for reading data.\n");
+                return;
+            }
+
+            unsigned int bytesRead = readFile(fs, startCluster, fileOffset, buffer, bytesToRead);
+
+            // Print out the data
+            for (unsigned int j = 0; j < bytesRead; j++) {
+                printf("%c", buffer[j]);
+            }
+            printf("\n");
+
+            // Update the offset
+            fs->openFileList[i].offset += bytesRead;
+
+            free(buffer);
+            return;
+        }
+    }
+
+    // If no open file was found or it's not the correct file
+    printf("Error: File '%s' is not open or does not exist.\n", filename);
+}
+
+unsigned int readFile(FAT32FileSystem* fs, unsigned int startCluster, unsigned int offset, unsigned char* buffer, unsigned int bytesToRead) {
+    // Convert offset to cluster number (assuming offset is within file size limits, already checked)
+    unsigned long clusterOffset = (startCluster - 2) * fs->BPB_SecPerClus + (offset / fs->BPB_BytsPerSec) * fs->BPB_BytsPerSec;
+    fseek(fs->imageFile, clusterOffset, SEEK_SET);
+
+    // Adjust read size if it goes beyond the file size (this requires knowing the file size which should be managed elsewhere)
+    // Read the data
+    unsigned int bytesRead = fread(buffer, 1, bytesToRead, fs->imageFile);
+    return bytesRead;
+}
 
 
 

@@ -98,6 +98,15 @@ void lexer(FAT32FileSystem* fs)
 					lseek(fs, tokens->items[1], offset);
 				}
 			}
+			else if (strcmp(tokens->items[0], "read") == 0) {
+				if (tokens->size < 3) {
+					printf("Usage: read [FILENAME] [SIZE]\n");
+				}
+				else {
+					unsigned int size = atoi(tokens->items[2]); // Convert size from string to integer
+					readCommand(fs, tokens->items[1], size);
+				}
+			}
 			else{
 				printf("Command not '%s' found.\n", tokens->items[0]);
 			}
