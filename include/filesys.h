@@ -36,6 +36,7 @@ typedef struct {
     char BS_VolLab[12];
     char BS_FilSysType[9];
     unsigned int Signature_word;
+    
 
     //unsigned int currentCluster;  Replaced by array and depth!
     unsigned int path[64];  // Max depth of 64 :D
