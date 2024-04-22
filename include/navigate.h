@@ -5,24 +5,27 @@
 #include <string.h>
 
 
-void cd(FAT32FileSystem* fs, const char* dirname) {
+bool cd(FAT32FileSystem* fs, const char* dirname) {
     unsigned char* buffer = (unsigned char*)(malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus));
-    readCluster(fs, fs->currentCluster, buffer);
+    readCluster(fs, getCurrCluster(fs), buffer);
     unsigned int newCluster = findDirectoryCluster(buffer, dirname);
 
     if (newCluster == 0) {
         printf("Directory not found: %s\n", dirname);
+        free(buffer);
+        return false;
     } else {
-        fs->currentCluster = newCluster;
+        updateCurrCluster(fs, newCluster);
         printf("Changed directory to %s\n", dirname);
     }
 
     free(buffer);
+    return true;
 }
 
 void ls(FAT32FileSystem* fs) {
     unsigned char* buffer = (unsigned char*)(malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus));
-    readCluster(fs, fs->currentCluster, buffer);
+    readCluster(fs, getCurrCluster(fs), buffer);
     const unsigned char* p = buffer;
     while (*p != 0) {
         if (p[11] == 0x10 || p[11] == 0x20) {

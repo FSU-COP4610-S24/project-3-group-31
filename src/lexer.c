@@ -6,10 +6,13 @@
 #include <string.h>
 
 void lexer(FAT32FileSystem* fs)
-{	char name[] = "fat32.img";
+{	
+	char path[256] = "fat32.img";
+	bool valid;
 	while (1) {
 		// FIXME: Find a way to show path from inside filesystem
-		printf("%s/>", name);
+		printf("%s/> ", path);
+		valid = false;
 
 		char *input = get_input();
 
@@ -28,7 +31,17 @@ void lexer(FAT32FileSystem* fs)
 				ls(fs);
 			}
 			else if(strcmp(tokens->items[0], "cd") == 0){
-				cd(fs, tokens->items[1]);
+				if (tokens->size == 1)
+					printf("Provide a directory to change to.\n");
+				else {
+					valid = cd(fs, tokens->items[1]);
+					if (strcmp(tokens->items[1],"..") == 0 && valid == true)
+						upOneDir(path);
+					else if (valid == true) {
+						strcat(path, "/");
+						strcat(path, tokens->items[1]);
+					}
+				}
 			}
 			else if (strcmp(tokens->items[0], "mkdir") == 0) {
 				if (tokens->size < 2) {
@@ -117,4 +130,16 @@ void getImageName(char* filename, char* buffer) {
 		buffer++;
 	else
 		strcpy(buffer, filename);
+}
+
+void upOneDir(char* path) {
+	char* lastSlash = path;
+	char* nextSlash;
+
+	do {
+	nextSlash = lastSlash;
+	lastSlash = strchr(path, '/');
+	} while (lastSlash != NULL);
+	
+	*lastSlash ='\0';
 }

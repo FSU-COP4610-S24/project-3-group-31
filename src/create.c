@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <ctype.h>
 #include <stdbool.h>
 
@@ -15,7 +16,7 @@ void mkdir(FAT32FileSystem* fs, const char* dirname) {
     }
 
     // Read the current cluster (assumed to be the current directory)
-    readCluster(fs, fs->currentCluster, buffer);
+    readCluster(fs, getCurrCluster(fs), buffer);
 
     // Check if the directory already exists
     unsigned int dirCluster = findDirectoryCluster(buffer, dirname);
@@ -34,10 +35,10 @@ void mkdir(FAT32FileSystem* fs, const char* dirname) {
     }
 
     // Initialize the directory cluster with '.' and '..'
-    initDirectoryCluster(fs, newDirCluster, fs->currentCluster);
+    initDirectoryCluster(fs, newDirCluster, getCurrCluster(fs));
 
     // Update the parent directory to include the new directory
-    if (!addDirectoryEntry(fs, fs->currentCluster, dirname, newDirCluster, true)) {
+    if (!addDirectoryEntry(fs, getCurrCluster(fs), dirname, newDirCluster, true)) {
         printf("Error: Could not add new directory entry.\n");
         freeCluster(fs, newDirCluster);
     }
