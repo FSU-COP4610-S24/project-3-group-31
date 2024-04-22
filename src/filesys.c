@@ -48,9 +48,11 @@ void readBootSector(FAT32FileSystem* fs) {
     getBytestoChar(82, 8, fs->BS_FilSysType);
     fs->Signature_word  = getBytes(510, 2);
 
+    // Also initializes crucial file structure information
     fs->path[0] = fs->BPB_RootClus;
     fs->depth = 0;
     fs->imageFile = imageFile;
+    
 }
 
 unsigned int getBytes(unsigned int offset, unsigned int size)
