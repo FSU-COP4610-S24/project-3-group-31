@@ -9,7 +9,7 @@ FILE* imageFile;
 unsigned short buffer[12];
 
 FAT32FileSystem* readFAT32FileSystem(const char* filename) {
-    imageFile = fopen(filename, "rb");
+    imageFile = fopen(filename, "rb+");     // Read and write in binary mode
     if (imageFile == NULL) {
         printf("Error: File '%s' does not exist.\n", filename);
         return NULL;
@@ -20,20 +20,7 @@ FAT32FileSystem* readFAT32FileSystem(const char* filename) {
     readBootSector(fs);
 
     // use mmap to map the file to memory
-
-
     fs->currentCluster = fs->BPB_RootClus;
-
-    fs->filename = strdup(filename);
-    if (fs->filename == NULL) {
-        printf("Memory allocation failed for filename.\n");
-        free(fs);
-        fclose(imageFile);
-        return NULL;
-    }
-
-    fclose(imageFile);
-
     return fs;
 }
 
@@ -67,6 +54,8 @@ void readBootSector(FAT32FileSystem* fs) {
     getBytestoChar(71, 11, fs->BS_VolLab);
     getBytestoChar(82, 8, fs->BS_FilSysType);
     fs->Signature_word  = getBytes(510, 2);
+    fs->currentCluster = NULL;
+    fs->imageFile = imageFile;
 }
 
 unsigned int getBytes(unsigned int offset, unsigned int size)
@@ -95,10 +84,8 @@ unsigned int makeBigEndian(unsigned char *array, int bytes) {
 
 void readCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer) {
     unsigned long offset = ((clusterNumber - 2) * fs->BPB_SecPerClus + fs->BPB_RsvdSecCnt + (fs->BPB_NumFATs * fs->BPB_FATSz32)) * fs->BPB_BytsPerSec;
-    FILE* file = fopen(fs->filename, "rb");
-    fseek(file, offset, SEEK_SET);
-    fread(buffer, fs->BPB_BytsPerSec, fs->BPB_SecPerClus, file);
-    fclose(file);
+    fseek(fs->imageFile, offset, SEEK_SET);
+    fread(buffer, fs->BPB_BytsPerSec, fs->BPB_SecPerClus, fs->imageFile);
 }
 
 unsigned int findDirectoryCluster(const void* buffer, const char* name) {
@@ -124,4 +111,101 @@ unsigned int findDirectoryCluster(const void* buffer, const char* name) {
     }
     return 0;
 }
+
+void writeCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer) {
+    if (!fs || !buffer) {
+        fprintf(stderr, "Invalid filesystem or buffer.\n");
+        return;
+    }
+
+    // Calculate the byte offset to the start of the desired cluster
+    unsigned long clusterOffset = ((clusterNumber - 2) * fs->BPB_SecPerClus + fs->BPB_RsvdSecCnt + (fs->BPB_NumFATs * fs->BPB_FATSz32)) * fs->BPB_BytsPerSec;
+
+    if (fs->imageFile == NULL) {
+        fprintf(stderr, "Error opening filesystem image file '%s'.\n", fs->filename);
+        return;
+    }
+
+    // Move the file pointer to the calculated offset
+    if (fseek(fs->imageFile, clusterOffset, SEEK_SET) != 0) {
+        fprintf(stderr, "Error seeking to cluster position in image file.\n");
+        return;
+    }
+
+    // Write the buffer to the disk image
+    size_t bytesToWrite = fs->BPB_BytsPerSec * fs->BPB_SecPerClus;
+    if (fwrite(buffer, 1, bytesToWrite, fs->imageFile) != bytesToWrite) {
+        fprintf(stderr, "Error writing to filesystem image file.\n");
+    }
+    else {
+        printf("Cluster %u written successfully.\n", clusterNumber);
+    }
+}
+
+unsigned int findFreeCluster(FAT32FileSystem* fs)
+{
+    if (!fs->imageFile) {
+        fprintf(stderr, "Failed to open disk image.\n");
+        return 0;
+    }
+
+    // Seek to the start of the FAT
+    fseek(fs->imageFile, fs->BPB_RsvdSecCnt * fs->BPB_BytsPerSec, SEEK_SET);
+
+    unsigned int totalClusters = fs->BPB_TotSec32 / fs->BPB_SecPerClus;
+    unsigned int fatEntry;
+    for (unsigned int i = 2; i < totalClusters; i++) { // Cluster numbers start at 2
+        fread(&fatEntry, sizeof(fatEntry), 1, fs->imageFile);
+        if (fatEntry == 0) {  // 0 indicates a free cluster
+            return i;
+        }
+    }
+    return 0;  // No free cluster found
+}
+
+int addDirectoryEntry(FAT32FileSystem* fs, unsigned int directoryCluster, const char* entryName, unsigned int entryCluster, int isDirectory) {
+    void* clusterBuffer = malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus);
+    if (!clusterBuffer) {
+        fprintf(stderr, "Memory allocation failed for directory buffer.\n");
+        return 0;
+    }
+
+    readCluster(fs, directoryCluster, clusterBuffer);
+    DirectoryEntry* entry = (DirectoryEntry*)clusterBuffer;
+
+    // Find a free entry in the directory
+    int found = 0;
+    for (int i = 0; i < fs->BPB_SecPerClus * fs->BPB_BytsPerSec / sizeof(DirectoryEntry); i++) {
+        if (entry[i].DIR_Name[0] == 0x00 || entry[i].DIR_Name[0] == 0xE5) { // Free or deleted entry
+            memset(&entry[i], 0, sizeof(DirectoryEntry));
+            memcpy(entry[i].DIR_Name, entryName, strlen(entryName));
+            entry[i].DIR_Attr = isDirectory ? ATTR_DIRECTORY : ATTR_ARCHIVE;
+            entry[i].DIR_FstClusHI = (entryCluster >> 16) & 0xFFFF;
+            entry[i].DIR_FstClusLO = entryCluster & 0xFFFF;
+            entry[i].DIR_FileSize = 0;  // Set file size to 0 for directories
+
+            writeCluster(fs, directoryCluster, clusterBuffer);
+            found = 1;
+            break;
+        }
+    }
+
+    free(clusterBuffer);
+    return found;
+}
+
+void freeCluster(FAT32FileSystem* fs, unsigned int clusterNumber) {
+    if (!fs->imageFile) {
+        fprintf(stderr, "Failed to open disk image for updating FAT.\n");
+        return;
+    }
+
+    // Calculate the offset in the FAT for this cluster entry
+    unsigned long offset = fs->BPB_RsvdSecCnt * fs->BPB_BytsPerSec + clusterNumber * sizeof(unsigned int);
+    fseek(fs->imageFile, offset, SEEK_SET);
+
+    unsigned int zero = 0;
+    fwrite(&zero, sizeof(zero), 1, fs->imageFile);  // Free the cluster
+}
+
 
