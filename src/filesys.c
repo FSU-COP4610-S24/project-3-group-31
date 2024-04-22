@@ -80,3 +80,27 @@ unsigned int makeBigEndian(unsigned char *array, int bytes) {
     }
     return out;
 }
+
+void readCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer) {
+    unsigned long offset = ((clusterNumber - 2) * fs->BPB_SecPerClus + fs->BPB_RsvdSecCnt + (fs->BPB_NumFATs * fs->BPB_FATSz32)) * fs->BPB_BytsPerSec;
+    FILE* file = fopen(fs->filename, "rb");
+    fseek(file, offset, SEEK_SET);
+    fread(buffer, fs->BPB_BytsPerSec, fs->BPB_SecPerClus, file);
+    fclose(file);
+}
+
+unsigned int findDirectoryCluster(const void* buffer, const char* name) {
+    const unsigned char* p = buffer;
+    while (*p != 0) {
+        if (p[11] == 0x10 || p[11] == 0x20) { 
+            char entryName[12];
+            strncpy(entryName, (const char*)p, 11);
+            entryName[11] = '\0';
+            if (strncmp(entryName, name, 11) == 0) {
+                return *(unsigned short*)(p + 26) + (*(unsigned short*)(p + 20) << 16);
+            }
+        }
+        p += 32; 
+    }
+    return 0;
+}
