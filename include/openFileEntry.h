@@ -8,4 +8,6 @@ typedef struct {
     unsigned int cluster;    // Start cluster of the file
     unsigned int offset;     // Current offset in the file
     bool inUse;              // Indicates if the entry is in use
+    unsigned int* path[32];  // keep track of path
+    unsigned int depth;      // depth in path
 } OpenFileEntry;

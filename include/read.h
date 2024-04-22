@@ -1,6 +1,5 @@
-#pragma once
-#include "openFileEntry.h"
 #include "filesys.h"
+#include "openFileEntry.h"
 
 void lsof(FAT32FileSystem* fs);
 // To accomodate preexisting path

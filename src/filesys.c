@@ -95,6 +95,7 @@ unsigned int findDirectoryCluster(const void* buffer, const char* name) {
             if (strncmp((const char*)p, formattedName, 11) == 0) {
                 unsigned int high = *(unsigned short*)(p + 20);
                 unsigned int low = *(unsigned short*)(p + 26);
+                printf(">Cluster number is %x", (high << 16) | low);
                 return (high << 16) | low;
             }
         }
@@ -205,7 +206,9 @@ void freeCluster(FAT32FileSystem* fs, unsigned int clusterNumber) {
 
 // Get current directory via cluster number
 unsigned int getCurrCluster(FAT32FileSystem* fs) {
-    return fs->path[fs->depth];
+    if (fs->depth == 0)
+        return fs->BPB_RootClus;
+    return fs->path[fs->depth - 1];
 }
 
 void formatDirectoryName(char* dest, const char* src) {
@@ -243,6 +246,8 @@ bool goToParent(FAT32FileSystem* fs) {
 }
 
 void updateCurrCluster(FAT32FileSystem* fs, unsigned int newClust) {
-    fs->path[++(fs->depth)] = newClust;
+    printf("newclust is %x:", newClust);
+    fs->path[fs->depth] = newClust;
+    fs->depth += 1;
 }
 

@@ -1,6 +1,5 @@
 # pragma once
 #include <stdint.h>
-#include "read.h"
 #include "openFileEntry.h"
 #include <sys/mman.h>
 #include <string.h>
@@ -11,6 +10,23 @@
 #define ATTR_DIRECTORY  0x10
 #define ATTR_ARCHIVE    0x20
 #define ATTR_VOLUME_ID  0x08
+
+
+// FAT32 Directory Entry Structure
+typedef struct {
+    char DIR_Name[11];        // Short name (8 characters + 3 extension, padded with spaces)
+    uint8_t DIR_Attr;         // Attributes
+    uint8_t DIR_NTRes;        // Reserved for use by Windows NT
+    uint8_t DIR_CrtTimeTenth; // Millisecond stamp at file creation time
+    uint16_t DIR_CrtTime;     // Time file was created
+    uint16_t DIR_CrtDate;     // Date file was created
+    uint16_t DIR_LstAccDate;  // Last access date
+    uint16_t DIR_FstClusHI;   // High word of the first cluster number
+    uint16_t DIR_WrtTime;     // Time of last write
+    uint16_t DIR_WrtDate;     // Date of last write
+    uint16_t DIR_FstClusLO;   // Low word of the first cluster number
+    uint32_t DIR_FileSize;    // File size in bytes
+} DirectoryEntry;
 
 typedef struct {
     // Add necessary fields to represent the format of the FAT32 filesystem
@@ -39,30 +55,17 @@ typedef struct {
     char BS_FilSysType[9];
     unsigned int Signature_word;
     
+    // this would make sense as a doubly linked list of type
+    // DirectoryEntry, however nothing in this program is modular
+    // so its not simple to create a DirectoryEntry type though it should be.
     unsigned int path[32];  // Max depth of 32 :D
     unsigned int depth;
     char* filename;
     FILE* imageFile; 
 
     OpenFileEntry openFileList[MAX_OPEN_FILES];
-    unsigned int opened_files;
+    unsigned int files_opened;
 } FAT32FileSystem;
-
-// FAT32 Directory Entry Structure
-typedef struct {
-    char DIR_Name[11];        // Short name (8 characters + 3 extension, padded with spaces)
-    uint8_t DIR_Attr;         // Attributes
-    uint8_t DIR_NTRes;        // Reserved for use by Windows NT
-    uint8_t DIR_CrtTimeTenth; // Millisecond stamp at file creation time
-    uint16_t DIR_CrtTime;     // Time file was created
-    uint16_t DIR_CrtDate;     // Date file was created
-    uint16_t DIR_LstAccDate;  // Last access date
-    uint16_t DIR_FstClusHI;   // High word of the first cluster number
-    uint16_t DIR_WrtTime;     // Time of last write
-    uint16_t DIR_WrtDate;     // Date of last write
-    uint16_t DIR_FstClusLO;   // Low word of the first cluster number
-    uint32_t DIR_FileSize;    // File size in bytes
-} DirectoryEntry;
 
 FAT32FileSystem* readFAT32FileSystem(const char* filename); 
 void readBootSector(FAT32FileSystem* fs);

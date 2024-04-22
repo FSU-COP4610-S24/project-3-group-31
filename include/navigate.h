@@ -16,7 +16,13 @@ bool cd(FAT32FileSystem* fs, const char* dirname) {
         return false;
     } else {
         updateCurrCluster(fs, newCluster);
+        printf("Cluster updated with %x", newCluster);
         printf("Changed directory to %s\n", dirname);
+    }
+
+    for (int i = 0; i < fs->depth; i++)
+    {
+        printf(">Contents of path[%u]:\t%x\n",i,fs->path[i]);
     }
 
     free(buffer);

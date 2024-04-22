@@ -1,43 +1,37 @@
 #include "read.h"
 #include "string.h"
 
-void lsof(FAT32FileSystem* fs) {
-    if (fs->files_opened == 0) {
-        printf("There are no files currently opened.\n");
-        return;
-    }
-    printf("INDEX\tMODE\t\tOFFSET\t\tPATH\n");
-    for (int i = 0; i++; i < fs->files_opened) {
-        printf("%u", i);
-
-        // print Index:
-        // print file name
-        // print mode
-        // print offset
-        // print path 
-    }
-}
-
-
 // what an ugly function this will become -_-
+// FIXME: DELETE THIS FUNCTION
+// Instead, change the fs struct to include a doubly linked list of the DirectoryEntry stuff
+// such that the name and HI and LO numbers are retained.
+// Memory technical debt.
 char* getAsciiPath(FAT32FileSystem* fs, OpenFileEntry entry, char* asciiPath) {
     // to grab the whole cluster
     unsigned char* buffer = (char*) malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus);
     unsigned int clustNum = 0;
+    unsigned int depth = entry.depth;
+    unsigned int* path = entry.path;
+    unsigned int high, low;
 
     // replace hardcoded with fs->filename
     strcpy(asciiPath, "fat32.img/");
+    if (depth == 0)
+        return asciiPath;
 
-    for (int i = 0; i < depth - 1; i++)
+    for (int i = 0; i < depth; i++)
     {
-        readCluster(fs, path[1], buffer);
+        readCluster(fs, path[i], buffer);
         do {
             if ((buffer[11] & ATTR_DIRECTORY) && !(buffer[11] & ATTR_VOLUME_ID)){
-                clustNum = ((*(*unsigned short)(buffer+20)) << 16) | 
-                    *((*unsigned short)(buffer+26));
+                high = *(unsigned short*)(buffer + 20);
+                low = *(unsigned short*)(buffer + 26);
+
+                clustNum = (high << 16) | low;
+                    // FIXME: Error in calculating cluster number somehow
             }
             buffer += 32;
-        } while (clustNum != path[depth + 1])
+        } while (clustNum != path[i]);
         buffer[9] = '\0';
         strcat(asciiPath, "/");
         strcat(asciiPath, buffer);
@@ -96,6 +90,8 @@ void openFile(FAT32FileSystem* fs, const char* filename, const char* mode) {
             fs->openFileList[i].cluster = getCurrCluster(fs);
             fs->openFileList[i].offset = 0;
             fs->openFileList[i].inUse = true;
+            memcpy(fs->openFileList[i].path, fs->path, fs->depth);
+            fs->openFileList[i].depth = fs->depth;
             printf("File opened: %s at cluster %u\n", formattedName, getCurrCluster(fs));
             printf("File '%s' opened successfully in mode %s.\n", filename, mode);
             return;
@@ -130,7 +126,8 @@ void closeFile(FAT32FileSystem* fs, const char* filename) {
 
 void lsof(FAT32FileSystem* fs) {
     bool anyOpen = false;
-    printf("Index\tFile Name\tMode\t\tOffset\t\tPath\n");
+    printf("Index\tFile Name\t\tMode\t\tOffset\t\tPath\n");
+    char path[256];
 
     for (int i = 0; i < MAX_OPEN_FILES; i++) {
         if (fs->openFileList[i].inUse) {
@@ -145,6 +142,7 @@ void lsof(FAT32FileSystem* fs) {
             // SUPER IMPORTANT BELOW PLZ FIX
 
             char path[256] = "/current/path/"; // This needs to be gotten from a func we haven't made don't ship like this plox plz
+            getAsciiPath(fs, fs->openFileList[i], path);
 
             // Fix the spacing between them also
             printf("%d\t%s\t\t%s\t%d\t\t%s\n",
