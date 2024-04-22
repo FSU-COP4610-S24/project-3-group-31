@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 FILE* imageFile;
 unsigned short buffer[12];
@@ -101,14 +102,22 @@ void readCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer) 
 }
 
 unsigned int findDirectoryCluster(const void* buffer, const char* name) {
+    char formattedName[12];
+    memset(formattedName, ' ', 11); // formatted name
+    formattedName[11] = '\0';
+
+    int nameLen = strlen(name);
+    for (int i = 0; i < nameLen && i < 8; i++) {
+        formattedName[i] = toupper(name[i]);
+    }
+
     const unsigned char* p = buffer;
-    while (*p != 0) {
-        if (p[11] == 0x10 || p[11] == 0x20) { 
-            char entryName[12];
-            strncpy(entryName, (const char*)p, 11);
-            entryName[11] = '\0';
-            if (strncmp(entryName, name, 11) == 0) {
-                return *(unsigned short*)(p + 26) + (*(unsigned short*)(p + 20) << 16);
+    while (*p != 0 && *p != 0xE5) {  //0xE5 marks a deleted file entry, 0x00 marks end of directory entries
+        if ((p[11] & 0x10) && !(p[11] & 0x08)) { //check if it's a directory and not a volume label
+            if (strncmp((const char*)p, formattedName, 11) == 0) {
+                unsigned int high = *(unsigned short*)(p + 20);
+                unsigned int low = *(unsigned short*)(p + 26);
+                return (high << 16) | low;
             }
         }
         p += 32; 
