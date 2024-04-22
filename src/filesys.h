@@ -31,6 +31,7 @@ typedef struct {
     unsigned int Signature_word;
 } FAT32FileSystem;
 
+FAT32FileSystem* readFAT32FileSystem(const char* filename); 
 void readBootSector(FAT32FileSystem* fs);
 unsigned int getBytes(unsigned int offset, unsigned int size);
 void getBytestoChar(unsigned int offset, unsigned int size, char* string);

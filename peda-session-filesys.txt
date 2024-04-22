@@ -1,4 +1,2 @@
-break main:16
-break readFAT32FileSystem:20
-break readFAT32FileSystem:21
+break readFAT32FileSystem
 
