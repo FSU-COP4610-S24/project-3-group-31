@@ -12,7 +12,7 @@ void lexer(FAT32FileSystem* fs)
 	while (1) {
 		// FIXME: Find a way to show path from inside filesystem
 		printf("%s/> ", path);
-		valid = false;
+		valid = false;	// Miscellaneous bool usage
 
 		char *input = get_input();
 
@@ -34,12 +34,17 @@ void lexer(FAT32FileSystem* fs)
 				if (tokens->size == 1)
 					printf("Provide a directory to change to.\n");
 				else {
-					valid = cd(fs, tokens->items[1]);
-					if (strcmp(tokens->items[1],"..") == 0 && valid == true)
-						upOneDir(path);
-					else if (valid == true) {
-						strcat(path, "/");
-						strcat(path, tokens->items[1]);
+					if (strcmp(tokens->items[1],"..") == 0) {
+						if (goToParent(fs))
+							upOneDir(path);
+						else
+							printf("Failed to move up a directory, you must already be at root.\n");
+					}
+					else {
+						if (cd(fs, tokens->items[1])) {
+							strcat(path, "/");
+							strcat(path, tokens->items[1]);
+						}
 					}
 				}
 			}
@@ -151,8 +156,9 @@ void upOneDir(char* path) {
 
 	do {
 	nextSlash = lastSlash;
-	lastSlash = strchr(path, '/');
+	lastSlash += sizeof(char);
+	lastSlash = strchr(lastSlash, '/');
 	} while (lastSlash != NULL);
 	
-	*lastSlash ='\0';
+	*nextSlash ='\0';
 }
