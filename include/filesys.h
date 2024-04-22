@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #define ATTR_DIRECTORY  0x10
 #define ATTR_ARCHIVE    0x20
+#define ATTR_VOLUME_ID  0x08
 
 typedef struct {
     // Add necessary fields to represent the format of the FAT32 filesystem
@@ -73,3 +74,4 @@ void freeCluster(FAT32FileSystem* fs, unsigned int clusterNumber);
 unsigned int getCurrCluster(FAT32FileSystem* fs);
 bool goToParent(FAT32FileSystem* fs);
 void updateCurrCluster(FAT32FileSystem* fs, unsigned int newClust);
+void formatDirectoryName(char* dest, const char* src);

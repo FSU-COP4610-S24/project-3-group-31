@@ -85,27 +85,18 @@ void readCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer) 
 
 unsigned int findDirectoryCluster(const void* buffer, const char* name) {
     char formattedName[12];
-    memset(formattedName, ' ', 11); // formatted name
-    formattedName[11] = '\0';
-
-    int nameLen = strlen(name);
-    for (int i = 0; i < nameLen && i < 8; i++) {
-        formattedName[i] = toupper(name[i]);
-    }
+    formatDirectoryName(formattedName, name);  // Make sure this uses the same formatting as in `addDirectoryEntry`
 
     const unsigned char* p = buffer;
-    while (*p != 0 && *p != 0xE5) {  //0xE5 marks a deleted file entry, 0x00 marks end of directory entries
-        if ((p[11] & 0x10)      //  0001 0000
-            && 
-            !(p[11] & 0x08))    //  0000 1000
-            { //check if it's a directory and not a volume label above
+    while (*p != 0 && *p != 0xE5) {  // Continue past deleted entries
+        if ((p[11] & ATTR_DIRECTORY) && !(p[11] & ATTR_VOLUME_ID)) {
             if (strncmp((const char*)p, formattedName, 11) == 0) {
                 unsigned int high = *(unsigned short*)(p + 20);
                 unsigned int low = *(unsigned short*)(p + 26);
                 return (high << 16) | low;
             }
         }
-        p += 32; 
+        p += 32; // Move to the next directory entry
     }
     return 0;
 }
@@ -170,13 +161,17 @@ int addDirectoryEntry(FAT32FileSystem* fs, unsigned int directoryCluster, const 
 
     readCluster(fs, directoryCluster, clusterBuffer);
     DirectoryEntry* entry = (DirectoryEntry*)clusterBuffer;
+    char formattedName[12];
+
+    // Format the entry name into FAT32 8.3 format
+    formatDirectoryName(formattedName, entryName);
 
     // Find a free entry in the directory
     int found = 0;
     for (int i = 0; i < fs->BPB_SecPerClus * fs->BPB_BytsPerSec / sizeof(DirectoryEntry); i++) {
         if (entry[i].DIR_Name[0] == 0x00 || entry[i].DIR_Name[0] == 0xE5) { // Free or deleted entry
             memset(&entry[i], 0, sizeof(DirectoryEntry));
-            memcpy(entry[i].DIR_Name, entryName, strlen(entryName));
+            memcpy(entry[i].DIR_Name, formattedName, 11);
             entry[i].DIR_Attr = isDirectory ? ATTR_DIRECTORY : ATTR_ARCHIVE;
             entry[i].DIR_FstClusHI = (entryCluster >> 16) & 0xFFFF;
             entry[i].DIR_FstClusLO = entryCluster & 0xFFFF;
@@ -209,6 +204,32 @@ void freeCluster(FAT32FileSystem* fs, unsigned int clusterNumber) {
 // Get current directory via cluster number
 unsigned int getCurrCluster(FAT32FileSystem* fs) {
     return fs->path[fs->depth];
+}
+
+void formatDirectoryName(char* dest, const char* src) {
+    memset(dest, ' ', 11);  // Fill with spaces to ensure proper formatting
+    int nameLength = 0, extLength = 0;
+    const char* ext = strchr(src, '.');
+
+    if (ext != NULL) {
+        nameLength = ext - src;
+        extLength = strlen(ext + 1);
+    }
+    else {
+        nameLength = strlen(src);
+    }
+    nameLength = nameLength > 8 ? 8 : nameLength; // Limit name length to 8
+    extLength = extLength > 3 ? 3 : extLength;   // Limit extension length to 3
+
+    // Convert name part
+    for (int i = 0; i < nameLength; ++i) {
+        dest[i] = toupper((unsigned char)src[i]);
+    }
+
+    // Convert extension part
+    for (int i = 0; i < extLength; ++i) {
+        dest[8 + i] = toupper((unsigned char)ext[i + 1]);
+    }
 }
 
 bool goToParent(FAT32FileSystem* fs) {
