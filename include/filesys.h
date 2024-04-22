@@ -28,6 +28,12 @@ typedef struct {
     uint32_t DIR_FileSize;    // File size in bytes
 } DirectoryEntry;
 
+typedef struct DirEntryList{
+    DirectoryEntry *entry;
+    struct DirEntryList *next, *prev;
+    size_t depth;
+} DirEntryList;
+
 typedef struct {
     // Add necessary fields to represent the format of the FAT32 filesystem
     unsigned int BS_jmpBoot;
@@ -58,8 +64,7 @@ typedef struct {
     // this would make sense as a doubly linked list of type
     // DirectoryEntry, however nothing in this program is modular
     // so its not simple to create a DirectoryEntry type though it should be.
-    unsigned int path[32];  // Max depth of 32 :D
-    unsigned int depth;
+    struct DirEntryList* currEntry;
     char* filename;
     FILE* imageFile; 
 
@@ -74,11 +79,15 @@ void getBytestoChar(unsigned int offset, unsigned int size, char* string);
 unsigned int makeBigEndian(unsigned char *array, int bytes);
 void readCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer);
 void writeCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer);
-unsigned int findDirectoryCluster(const void* buffer, const char* name);
+DirectoryEntry* findDirectoryCluster(const void* buffer, const char* name);
 unsigned int findFreeCluster(FAT32FileSystem* fs);
+// poor implementation of directory entry for full project use :/
 int addDirectoryEntry(FAT32FileSystem* fs, unsigned int directoryCluster, const char* entryName, unsigned int entryCluster, int isDirectory);
 void freeCluster(FAT32FileSystem* fs, unsigned int clusterNumber);
 unsigned int getCurrCluster(FAT32FileSystem* fs);
 bool goToParent(FAT32FileSystem* fs);
-void updateCurrCluster(FAT32FileSystem* fs, unsigned int newClust);
+void updateCurrCluster(FAT32FileSystem* fs, void* clustStart);
 void formatDirectoryName(char* dest, const char* src);
+DirectoryEntry* makeDirEntry(void* clustStart);
+unsigned int getHILO(DirectoryEntry *entry);
+DirEntryList* establishRoot(FAT32FileSystem* fs);

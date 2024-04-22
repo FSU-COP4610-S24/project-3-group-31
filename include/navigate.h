@@ -8,21 +8,15 @@
 bool cd(FAT32FileSystem* fs, const char* dirname) {
     unsigned char* buffer = (unsigned char*)(malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus));
     readCluster(fs, getCurrCluster(fs), buffer);
-    unsigned int newCluster = findDirectoryCluster(buffer, dirname);
+    DirectoryEntry* newDir = findDirectoryCluster(buffer, dirname);
 
-    if (newCluster == 0) {
+    if (newDir == NULL) {
         printf("Directory not found: %s\n", dirname);
         free(buffer);
         return false;
     } else {
-        updateCurrCluster(fs, newCluster);
-        printf("Cluster updated with %x", newCluster);
+        updateCurrCluster(fs, newDir);
         printf("Changed directory to %s\n", dirname);
-    }
-
-    for (int i = 0; i < fs->depth; i++)
-    {
-        printf(">Contents of path[%u]:\t%x\n",i,fs->path[i]);
     }
 
     free(buffer);

@@ -49,10 +49,12 @@ void readBootSector(FAT32FileSystem* fs) {
     fs->Signature_word  = getBytes(510, 2);
 
     // Also initializes crucial file structure information
-    fs->path[0] = fs->BPB_RootClus;
-    fs->depth = 0;
+    fs->currEntry = 
     fs->imageFile = imageFile;
     fs->files_opened = 0;
+
+    // root directory DirectoryEntry
+    fs->currEntry = establishRoot(fs);
 }
 
 unsigned int getBytes(unsigned int offset, unsigned int size)
@@ -85,7 +87,7 @@ void readCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer) 
     fread(buffer, fs->BPB_BytsPerSec, fs->BPB_SecPerClus, fs->imageFile);
 }
 
-unsigned int findDirectoryCluster(const void* buffer, const char* name) {
+DirectoryEntry* findDirectoryCluster(const void* buffer, const char* name) {
     char formattedName[12];
     formatDirectoryName(formattedName, name);  // Make sure this uses the same formatting as in `addDirectoryEntry`
 
@@ -93,15 +95,13 @@ unsigned int findDirectoryCluster(const void* buffer, const char* name) {
     while (*p != 0 && *p != 0xE5) {  // Continue past deleted entries
         if ((p[11] & ATTR_DIRECTORY) && !(p[11] & ATTR_VOLUME_ID)) {
             if (strncmp((const char*)p, formattedName, 11) == 0) {
-                unsigned int high = *(unsigned short*)(p + 20);
-                unsigned int low = *(unsigned short*)(p + 26);
-                printf(">Cluster number is %x", (high << 16) | low);
-                return (high << 16) | low;
+                DirectoryEntry* entry = makeDirEntry((void*)p);
+                return entry;
             }
         }
         p += 32; // Move to the next directory entry
     }
-    return 0;
+    return NULL;
 }
 
 void writeCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer) {
@@ -206,9 +206,7 @@ void freeCluster(FAT32FileSystem* fs, unsigned int clusterNumber) {
 
 // Get current directory via cluster number
 unsigned int getCurrCluster(FAT32FileSystem* fs) {
-    if (fs->depth == 0)
-        return fs->BPB_RootClus;
-    return fs->path[fs->depth - 1];
+    return getHILO(fs->currEntry->entry);
 }
 
 void formatDirectoryName(char* dest, const char* src) {
@@ -238,16 +236,47 @@ void formatDirectoryName(char* dest, const char* src) {
 }
 
 bool goToParent(FAT32FileSystem* fs) {
-    if (fs->depth == 0)
+    if (fs->currEntry->prev == NULL)
         return false;
-    
-    (fs->depth)--;
+    DirEntryList* temp = fs->currEntry;
+    fs->currEntry = fs->currEntry->prev;
+    fs->currEntry->next = NULL;
+    free(temp->entry);
+    free(temp);
     return true;
 }
 
-void updateCurrCluster(FAT32FileSystem* fs, unsigned int newClust) {
-    printf("newclust is %x:", newClust);
-    fs->path[fs->depth] = newClust;
-    fs->depth += 1;
+void updateCurrCluster(FAT32FileSystem* fs, void* clustStart) {
+    DirectoryEntry* curr = makeDirEntry(clustStart);
+    DirEntryList* currNode = malloc(sizeof(DirEntryList));
+    currNode->entry = curr;
+    currNode->next = NULL;
+    currNode->prev = fs->currEntry;
+    currNode->depth = fs->currEntry->depth + 1;
+    fs->currEntry->next = currNode;
+    fs->currEntry = currNode;
 }
 
+DirectoryEntry* makeDirEntry(void* clustStart){
+    DirectoryEntry* entry = malloc(sizeof(DirectoryEntry));
+    entry = (DirectoryEntry*)clustStart;
+    return entry;
+}
+
+unsigned int getHILO(DirectoryEntry* entry) {
+    unsigned int high = entry->DIR_FstClusHI;
+    unsigned int low = entry->DIR_FstClusLO;
+    return (high << 16) | low;
+}
+
+DirEntryList* establishRoot(FAT32FileSystem* fs)
+{
+    DirEntryList* rootDir = malloc(sizeof(DirectoryEntry));
+    strcpy(rootDir->entry->DIR_Name, "fat32.img");   // replace with filename
+    rootDir->entry->DIR_FstClusHI = (fs->BPB_RootClus >> 16) & 0xFFFF;
+    rootDir->entry->DIR_FstClusLO = (fs->BPB_RootClus) & 0xFFFF;
+    rootDir->prev = rootDir->next = NULL;
+    rootDir->depth = 0;
+    rootDir->entry->DIR_Attr = 0x10;
+    return rootDir;
+}

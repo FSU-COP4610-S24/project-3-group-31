@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void testFunctionality(FAT32FileSystem*);
+void cleanFileSystem(FAT32FileSystem*);
 
 int main(int argc, const char* argv[]) {
     const char* filename = argv[1];
@@ -20,4 +20,17 @@ int main(int argc, const char* argv[]) {
     free(fs->imageFile);
     free(fs);
     return 0;
+}
+
+void cleanFileSystem(FAT32FileSystem* fs)
+{
+    int ctr = fs->currEntry->depth;
+    for (int i = 1; i < fs->currEntry->depth; i++)
+    {
+        goToParent(fs);
+    }
+    free(fs->currEntry->entry);
+    free(fs->currEntry);
+    free(fs->imageFile);
+    free(fs);
 }

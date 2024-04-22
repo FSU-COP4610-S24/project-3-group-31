@@ -6,40 +6,6 @@
 // Instead, change the fs struct to include a doubly linked list of the DirectoryEntry stuff
 // such that the name and HI and LO numbers are retained.
 // Memory technical debt.
-char* getAsciiPath(FAT32FileSystem* fs, OpenFileEntry entry, char* asciiPath) {
-    // to grab the whole cluster
-    unsigned char* buffer = (char*) malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus);
-    unsigned int clustNum = 0;
-    unsigned int depth = entry.depth;
-    unsigned int* path = entry.path;
-    unsigned int high, low;
-
-    // replace hardcoded with fs->filename
-    strcpy(asciiPath, "fat32.img/");
-    if (depth == 0)
-        return asciiPath;
-
-    for (int i = 0; i < depth; i++)
-    {
-        readCluster(fs, path[i], buffer);
-        do {
-            if ((buffer[11] & ATTR_DIRECTORY) && !(buffer[11] & ATTR_VOLUME_ID)){
-                high = *(unsigned short*)(buffer + 20);
-                low = *(unsigned short*)(buffer + 26);
-
-                clustNum = (high << 16) | low;
-                    // FIXME: Error in calculating cluster number somehow
-            }
-            buffer += 32;
-        } while (clustNum != path[i]);
-        buffer[9] = '\0';
-        strcat(asciiPath, "/");
-        strcat(asciiPath, buffer);
-    }
-
-    free(buffer);
-    return asciiPath;
-}
 
 void openFile(FAT32FileSystem* fs, const char* filename, const char* mode) {
     // Check if file is already open
@@ -91,8 +57,7 @@ void openFile(FAT32FileSystem* fs, const char* filename, const char* mode) {
             fs->openFileList[i].fileCluster = fileCluster;
             fs->openFileList[i].offset = 0;
             fs->openFileList[i].inUse = true;
-            memcpy(fs->openFileList[i].path, fs->path, fs->depth);
-            fs->openFileList[i].depth = fs->depth;
+            // FIXME: Do a deep copy of the filepath into the open file structure
             printf("File opened: %s at cluster %u\n", formattedName, getCurrCluster(fs));
             printf("File opened: %s at cluster %u\n", formattedName, fileCluster);
             printf("File '%s' opened successfully in mode %s.\n", filename, mode);
@@ -143,8 +108,6 @@ void lsof(FAT32FileSystem* fs) {
             }
             // SUPER IMPORTANT BELOW PLZ FIX
 
-            char path[256] = "/current/path/"; // This needs to be gotten from a func we haven't made don't ship like this plox plz
-            getAsciiPath(fs, fs->openFileList[i], path);
 
             // Fix the spacing between them also
             printf("%d\t%s\t\t%s\t%d\t\t%s\n",
@@ -267,7 +230,6 @@ unsigned int readFile(FAT32FileSystem* fs, unsigned int startCluster, unsigned i
     unsigned int bytesRead = fread(buffer, 1, bytesToRead, fs->imageFile);
     return bytesRead;
 }
-
 
 
 
