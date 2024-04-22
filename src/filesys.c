@@ -95,10 +95,8 @@ unsigned int makeBigEndian(unsigned char *array, int bytes) {
 
 void readCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer) {
     unsigned long offset = ((clusterNumber - 2) * fs->BPB_SecPerClus + fs->BPB_RsvdSecCnt + (fs->BPB_NumFATs * fs->BPB_FATSz32)) * fs->BPB_BytsPerSec;
-    FILE* file = fopen(fs->filename, "rb");
-    fseek(file, offset, SEEK_SET);
-    fread(buffer, fs->BPB_BytsPerSec, fs->BPB_SecPerClus, file);
-    fclose(file);
+    fseek(fs->file, offset, SEEK_SET);
+    fread(buffer, fs->BPB_BytsPerSec, fs->BPB_SecPerClus, fs->file);
 }
 
 unsigned int findDirectoryCluster(const void* buffer, const char* name) {
@@ -113,7 +111,10 @@ unsigned int findDirectoryCluster(const void* buffer, const char* name) {
 
     const unsigned char* p = buffer;
     while (*p != 0 && *p != 0xE5) {  //0xE5 marks a deleted file entry, 0x00 marks end of directory entries
-        if ((p[11] & 0x10) && !(p[11] & 0x08)) { //check if it's a directory and not a volume label
+        if ((p[11] & 0x10)      //  0001 0000
+            && 
+            !(p[11] & 0x08))    //  0000 1000
+            { //check if it's a directory and not a volume label above
             if (strncmp((const char*)p, formattedName, 11) == 0) {
                 unsigned int high = *(unsigned short*)(p + 20);
                 unsigned int low = *(unsigned short*)(p + 26);

@@ -129,7 +129,13 @@ void getImageName(char* filename, char* buffer) {
 }
 
 void upOneDir(char* path) {
-	char* lastSlash = strchr(path, '/');
-	if (lastSlash != NULL)
-		*lastSlash = '\0';
+	char* lastSlash = path;
+	char* nextSlash;
+
+	do {
+	nextSlash = lastSlash;
+	lastSlash = strchr(path, '/');
+	} while (lastSlash != NULL)
+	
+	*lastSlash ='\0';
 }
