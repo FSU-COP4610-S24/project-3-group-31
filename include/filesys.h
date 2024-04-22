@@ -7,6 +7,7 @@
 #include <string.h>
 #define ATTR_DIRECTORY  0x10
 #define ATTR_ARCHIVE    0x20
+#define ATTR_VOLUME_ID  0x08
 
 typedef struct {
     // Add necessary fields to represent the format of the FAT32 filesystem
@@ -70,3 +71,4 @@ unsigned int findDirectoryCluster(const void* buffer, const char* name);
 unsigned int findFreeCluster(FAT32FileSystem* fs);
 int addDirectoryEntry(FAT32FileSystem* fs, unsigned int directoryCluster, const char* entryName, unsigned int entryCluster, int isDirectory);
 void freeCluster(FAT32FileSystem* fs, unsigned int clusterNumber);
+void formatDirectoryName(char* dest, const char* src);
