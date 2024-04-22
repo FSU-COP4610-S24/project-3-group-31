@@ -5,12 +5,11 @@
 #include <stdio.h>
 #include <string.h>
 
-void lexer(FAT32FileSystem* fs, char* file)
-{
+void lexer(FAT32FileSystem* fs)
+{	char name[] = "fat32.img";
 	while (1) {
 		// FIXME: Find a way to show path from inside filesystem
-		printf("%s/>", fs->BS_OEMName);
-		// free(pwd);
+		printf("%s/>", name);
 
 		char *input = get_input();
 
@@ -37,6 +36,7 @@ void lexer(FAT32FileSystem* fs, char* file)
 				}
 				else {
 					mkdir(fs, tokens->items[1]);
+					printf("Directory %s made.\n", tokens->items[1]);
 				}
 			}
 			else{
@@ -109,4 +109,12 @@ void free_tokens(tokenlist *tokens) {
 		free(tokens->items[i]);
 	free(tokens->items);
 	free(tokens);
+}
+
+void getImageName(char* filename, char* buffer) {
+	buffer = strchr(filename, '/');
+	if(buffer != NULL)
+		buffer++;
+	else
+		strcpy(buffer, filename);
 }

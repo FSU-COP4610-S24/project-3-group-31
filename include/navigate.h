@@ -21,9 +21,8 @@ void cd(FAT32FileSystem* fs, const char* dirname) {
 }
 
 void ls(FAT32FileSystem* fs) {
-unsigned char* buffer = (unsigned char*)(malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus));
+    unsigned char* buffer = (unsigned char*)(malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus));
     readCluster(fs, fs->currentCluster, buffer);
-
     const unsigned char* p = buffer;
     while (*p != 0) {
         if (p[11] == 0x10 || p[11] == 0x20) {

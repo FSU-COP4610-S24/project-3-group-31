@@ -1,4 +1,3 @@
-// This part will read in the filesystem
 #include "filesys.h"
 #include <string.h>
 #include <stdio.h>
@@ -9,7 +8,7 @@ FILE* imageFile;
 unsigned short buffer[12];
 
 FAT32FileSystem* readFAT32FileSystem(const char* filename) {
-    imageFile = fopen(filename, "rb");
+    imageFile = fopen(filename, "rb+");     // Read and write in binary mode
     if (imageFile == NULL) {
         printf("Error: File '%s' does not exist.\n", filename);
         return NULL;
@@ -21,18 +20,9 @@ FAT32FileSystem* readFAT32FileSystem(const char* filename) {
 
     // use mmap to map the file to memory
 
-
     fs->currentCluster = fs->BPB_RootClus;
 
-    fs->filename = strdup(filename);
-    if (fs->filename == NULL) {
-        printf("Memory allocation failed for filename.\n");
-        free(fs);
-        fclose(imageFile);
-        return NULL;
-    }
-
-    fclose(imageFile);
+    // close imageFile in main
 
     return fs;
 }
@@ -67,6 +57,8 @@ void readBootSector(FAT32FileSystem* fs) {
     getBytestoChar(71, 11, fs->BS_VolLab);
     getBytestoChar(82, 8, fs->BS_FilSysType);
     fs->Signature_word  = getBytes(510, 2);
+    fs->currentCluster = NULL;
+    fs->imageFile = imageFile;
 }
 
 unsigned int getBytes(unsigned int offset, unsigned int size)
@@ -94,11 +86,10 @@ unsigned int makeBigEndian(unsigned char *array, int bytes) {
 }
 
 void readCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer) {
-    unsigned long offset = ((clusterNumber - 2) * fs->BPB_SecPerClus + fs->BPB_RsvdSecCnt + (fs->BPB_NumFATs * fs->BPB_FATSz32)) * fs->BPB_BytsPerSec;
-    FILE* file = fopen(fs->filename, "rb");
-    fseek(file, offset, SEEK_SET);
-    fread(buffer, fs->BPB_BytsPerSec, fs->BPB_SecPerClus, file);
-    fclose(file);
+    unsigned long offset = ((clusterNumber - 2) * fs->BPB_SecPerClus + fs->BPB_RsvdSecCnt + 
+        (fs->BPB_NumFATs * fs->BPB_FATSz32)) * fs->BPB_BytsPerSec;
+    fseek(fs->imageFile, offset, SEEK_SET);
+    fread(buffer, fs->BPB_BytsPerSec, fs->BPB_SecPerClus, fs->imageFile);
 }
 
 unsigned int findDirectoryCluster(const void* buffer, const char* name) {
