@@ -28,6 +28,9 @@ void lexer(FAT32FileSystem* fs, char* file)
             else if (strcmp(tokens->items[0], "info") == 0){
                 info(fs);
             }
+			else{
+				printf("Command not '%s' found.", tokens->items[0]);
+			}
         }
 		free(input);
 		free_tokens(tokens);
