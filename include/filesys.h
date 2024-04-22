@@ -1,10 +1,4 @@
 # pragma once
-#include <sys/mman.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 typedef struct {
     // Add necessary fields to represent the format of the FAT32 filesystem
     unsigned int BS_jmpBoot;
@@ -37,7 +31,6 @@ typedef struct {
     unsigned int Signature_word;
     unsigned int currentCluster;
     char* filename;
-    FILE* imageFile;
 } FAT32FileSystem;
 
 FAT32FileSystem* readFAT32FileSystem(const char* filename); 
@@ -47,12 +40,3 @@ void getBytestoChar(unsigned int offset, unsigned int size, char* string);
 unsigned int makeBigEndian(unsigned char *array, int bytes);
 void readCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer);
 unsigned int findDirectoryCluster(const void* buffer, const char* name);
-
-
-// Create stuff
-void writeCluster(FAT32FileSystem* fs, unsigned int cluster, const void* buffer);
-int checkExists(const char* name, FAT32FileSystem* fs);
-int allocateDirectoryEntry(const char* name, int isDir, FAT32FileSystem* fs);
-void updateFATTable(FAT32FileSystem* fs, unsigned int cluster);
-unsigned int readFATEntry(FAT32FileSystem* fs, unsigned int cluster);
-unsigned int getNextFreeCluster(FAT32FileSystem* fs);

@@ -45,7 +45,7 @@ void lexer(FAT32FileSystem* fs)
 				}
 				else {
 					mkdir(fs, tokens->items[1]);
-					printf("Directory %s made.\n", tokens->items[1]);
+					printf("Directory '%s' created successfully.\n", tokens->items[1]);
 				}
 			}
 			else{
