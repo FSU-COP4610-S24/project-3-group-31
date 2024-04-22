@@ -70,6 +70,14 @@ void lexer(FAT32FileSystem* fs)
 					}
 				}
 			}
+			else if (strcmp(tokens->items[0], "open") == 0) {
+				if (tokens->size < 3) {
+					printf("Error: Incorrect Use\n Usage: open [FILENAME] [FLAG]\n");
+				}
+				else {
+					openFile(fs, tokens->items[1], tokens->items[2]);
+				}
+			}
 			else{
 				printf("Command not '%s' found.\n", tokens->items[0]);
 			}
