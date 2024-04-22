@@ -1,4 +1,4 @@
 #include "filesys.h"
 
-void makeDir(FAT32FileSystem* fs, const char* dirname);
-void createDotEntries(unsigned char* buffer, unsigned int selfCluster, unsigned int parentCluster);
+void mkdir(FAT32FileSystem* fs, const char* dirname);
+void initDirectoryCluster(FAT32FileSystem* fs, unsigned int cluster, unsigned int parentCluster);

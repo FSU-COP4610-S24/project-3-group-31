@@ -1,51 +1,73 @@
 #include "filesys.h"
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
 
-// Function to create a directory in the FAT32 file system
-void makeDir(FAT32FileSystem* fs, const char* dirname) {
+void mkdir(FAT32FileSystem* fs, const char* dirname) {
+    // Buffer to read the current directory's content
+    void* buffer = malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus);
+    if (!buffer) {
+        printf("Error allocating memory for directory buffer.\n");
+        return;
+    }
+
+    // Read the current cluster (assumed to be the current directory)
+    readCluster(fs, fs->currentCluster, buffer);
+
     // Check if the directory already exists
-    if (checkExists(dirname, fs)) {
-        printf("Error: A directory or file named '%s' already exists.\n", dirname);
+    unsigned int dirCluster = findDirectoryCluster(buffer, dirname);
+    if (dirCluster != 0) {
+        printf("Error: Directory or file named '%s' already exists.\n", dirname);
+        free(buffer);
         return;
     }
 
-    // Allocate a directory entry for the new directory
-    int dirIndex = allocateDirectoryEntry(dirname, 1, fs);
-    if (dirIndex == -1) {
-        printf("Error: No space available to create directory '%s'.\n", dirname);
+    // Find a free cluster for the new directory
+    unsigned int newDirCluster = findFreeCluster(fs);
+    if (newDirCluster == 0) {
+        printf("Error: No free cluster available.\n");
+        free(buffer);
         return;
     }
 
-    // Get cluster number where this directory entry was made
-    unsigned int newDirCluster = getNextFreeCluster(fs);
-    if (newDirCluster == 0xFFFFFFFF) {
-        printf("Error: No free clusters available.\n");
-        return;
+    // Initialize the directory cluster with '.' and '..'
+    initDirectoryCluster(fs, newDirCluster, fs->currentCluster);
+
+    // Update the parent directory to include the new directory
+    if (!addDirectoryEntry(fs, fs->currentCluster, dirname, newDirCluster, true)) {
+        printf("Error: Could not add new directory entry.\n");
+        freeCluster(fs, newDirCluster);
     }
 
-    // Update FAT table for the new directory cluster
-    updateFATTable(fs, newDirCluster);
-
-    // Create `.` and `..` inside this newly created directory
-    unsigned char buffer[512] = { 0 };  // Assuming a sector size of 512 bytes
-    createDotEntries(buffer, newDirCluster, fs->BPB_RootClus);
-    writeCluster(fs, newDirCluster, buffer);
+    free(buffer);
 }
 
-// Helper function to create `.` and `..` entries
-void createDotEntries(unsigned char* buffer, unsigned int selfCluster, unsigned int parentCluster) {
-    // Create `.` entry
-    const char* dot = ".";
-    strncpy((char*)buffer, dot, 1);
-    buffer[11] = 0x10; // Directory attribute
-    unsigned short* clusterPtr = (unsigned short*)(buffer + 26);
-    *clusterPtr = (unsigned short)(selfCluster & 0xFFFF);
-    *(clusterPtr + 1) = (unsigned short)((selfCluster >> 16) & 0xFFFF);
+// Utility to initialize a directory cluster with '.' and '..'
+void initDirectoryCluster(FAT32FileSystem* fs, unsigned int cluster, unsigned int parentCluster) {
+    // Allocate buffer to represent a cluster
+    void* clusterBuffer = calloc(fs->BPB_BytsPerSec, fs->BPB_SecPerClus);
+    if (!clusterBuffer) {
+        printf("Failed to allocate memory for directory initialization.\n");
+        return;
+    }
 
-    // Create `..` entry
-    const char* dotdot = "..";
-    strncpy((char*)(buffer + 32), dotdot, 2);
-    buffer[32 + 11] = 0x10; // Directory attribute
-    clusterPtr = (unsigned short*)(buffer + 32 + 26);
-    *clusterPtr = (unsigned short)(parentCluster & 0xFFFF);
-    *(clusterPtr + 1) = (unsigned short)((parentCluster >> 16) & 0xFFFF);
+    // Create '.' entry
+    DirectoryEntry* dotEntry = (DirectoryEntry*)clusterBuffer;
+    strcpy(dotEntry->DIR_Name, ".          ");
+    dotEntry->DIR_Attr = ATTR_DIRECTORY;
+    dotEntry->DIR_FstClusHI = (cluster >> 16) & 0xFFFF;
+    dotEntry->DIR_FstClusLO = cluster & 0xFFFF;
+
+    // Create '..' entry
+    DirectoryEntry* dotDotEntry = (DirectoryEntry*)((char*)clusterBuffer + sizeof(DirectoryEntry));
+    strcpy(dotDotEntry->DIR_Name, "..         ");
+    dotDotEntry->DIR_Attr = ATTR_DIRECTORY;
+    dotDotEntry->DIR_FstClusHI = (parentCluster >> 16) & 0xFFFF;
+    dotDotEntry->DIR_FstClusLO = parentCluster & 0xFFFF;
+
+    // Write the initialized cluster back to the disk/file
+    writeCluster(fs, cluster, clusterBuffer);
+
+    free(clusterBuffer);
 }
