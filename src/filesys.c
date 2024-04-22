@@ -50,7 +50,6 @@ void readBootSector(FAT32FileSystem* fs) {
 
     fs->path[0] = fs->BPB_RootClus;
     fs->depth = 0;
-    fs->currentCluster = NULL;
     fs->imageFile = imageFile;
 }
 
@@ -205,4 +204,21 @@ void freeCluster(FAT32FileSystem* fs, unsigned int clusterNumber) {
 
     unsigned int zero = 0;
     fwrite(&zero, sizeof(zero), 1, fs->imageFile);  // Free the cluster
+}
+
+// Get current directory via cluster number
+unsigned int getCurrCluster(FAT32FileSystem* fs) {
+    return fs->path[fs->depth];
+}
+
+bool goToParent(FAT32FileSystem* fs) {
+    if (fs->depth == 0)
+        return false;
+    
+    (fs->depth)--;
+    return true;
+}
+
+void updateCurrCluster(FAT32FileSystem* fs, unsigned int newClust) {
+    fs->path[++(fs->depth)] = newClust;
 }

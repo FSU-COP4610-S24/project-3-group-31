@@ -16,7 +16,7 @@ int main(int argc, const char* argv[]) {
     // Use the fs structure to access and navigate through the FAT32 filesystem
     lexer(fs);
 
-    free(fs->filename);
+    //free(fs->filename);   // Never initialized (yet)
     free(fs->imageFile);
     free(fs);
     return 0;

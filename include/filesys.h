@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #define ATTR_DIRECTORY  0x10
 #define ATTR_ARCHIVE    0x20
 
@@ -37,7 +38,7 @@ typedef struct {
 
     //unsigned int currentCluster;  Replaced by array and depth!
     unsigned int path[64];  // Max depth of 64 :D
-    usigned int depth;
+    unsigned int depth;
     char* filename;
     FILE* imageFile;
 } FAT32FileSystem;
@@ -69,3 +70,6 @@ unsigned int findDirectoryCluster(const void* buffer, const char* name);
 unsigned int findFreeCluster(FAT32FileSystem* fs);
 int addDirectoryEntry(FAT32FileSystem* fs, unsigned int directoryCluster, const char* entryName, unsigned int entryCluster, int isDirectory);
 void freeCluster(FAT32FileSystem* fs, unsigned int clusterNumber);
+unsigned int getCurrCluster(FAT32FileSystem* fs);
+bool goToParent(FAT32FileSystem* fs);
+void updateCurrCluster(FAT32FileSystem* fs, unsigned int newClust);
