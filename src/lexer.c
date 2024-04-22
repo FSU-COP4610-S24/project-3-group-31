@@ -11,7 +11,7 @@ void lexer(FAT32FileSystem* fs)
 	bool valid;
 	while (1) {
 		// FIXME: Find a way to show path from inside filesystem
-		printf("%s/>", path);
+		printf("%s/> ", path);
 		valid = false;
 
 		char *input = get_input();
@@ -31,12 +31,16 @@ void lexer(FAT32FileSystem* fs)
 				ls(fs);
 			}
 			else if(strcmp(tokens->items[0], "cd") == 0){
-				valid = cd(fs, tokens->items[1]);
-				if (strcmp(tokens->items[1],"..") == 0 && valid == true)
-					upOneDir(path);
-				else if (valid == true) {
-					strcat(path, "/");
-					strcat(path, tokens->items[1]);
+				if (tokens->size == 1)
+					printf("Provide a directory to change to.\n");
+				else {
+					valid = cd(fs, tokens->items[1]);
+					if (strcmp(tokens->items[1],"..") == 0 && valid == true)
+						upOneDir(path);
+					else if (valid == true) {
+						strcat(path, "/");
+						strcat(path, tokens->items[1]);
+					}
 				}
 			}
 			else if (strcmp(tokens->items[0], "mkdir") == 0) {

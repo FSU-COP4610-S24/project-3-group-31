@@ -16,10 +16,7 @@ typedef struct {
     unsigned int BPB_SecPerClus;
     unsigned int BPB_RsvdSecCnt;
     unsigned int BPB_NumFATs;
-    unsigned int BPB_RootEntCnt;    // Always 0 on FAT32
-    unsigned int BPB_TotSec16;      // Always 0 on FAT32
     unsigned int BPB_Media;
-    unsigned int BPB_FATSz16;       // This field is always zero on FAT32, maybe discard it?
     unsigned int BPB_SecPerTrk;
     unsigned int BPB_NumHeads;
     unsigned int BPB_HiddSec;
@@ -30,7 +27,6 @@ typedef struct {
     unsigned int BPB_RootClus;
     unsigned int BPB_FSInfo;
     unsigned int BPB_BkBootSec;
-    unsigned int BPB_Reserved[3];   // Must be 0x0
     unsigned int BS_DrvNum;
     unsigned int BS_Reserved1;
     unsigned int BS_BootSig;
@@ -38,7 +34,10 @@ typedef struct {
     char BS_VolLab[12];
     char BS_FilSysType[9];
     unsigned int Signature_word;
-    unsigned int currentCluster;
+
+    //unsigned int currentCluster;  Replaced by array and depth!
+    unsigned int path[64];  // Max depth of 64 :D
+    usigned int depth;
     char* filename;
     FILE* imageFile;
 } FAT32FileSystem;

@@ -19,8 +19,6 @@ FAT32FileSystem* readFAT32FileSystem(const char* filename) {
     FAT32FileSystem* fs = (FAT32FileSystem*)malloc(sizeof(FAT32FileSystem));
     readBootSector(fs);
 
-    // use mmap to map the file to memory
-    fs->currentCluster = fs->BPB_RootClus;
     return fs;
 }
 
@@ -31,10 +29,7 @@ void readBootSector(FAT32FileSystem* fs) {
     fs->BPB_SecPerClus  = getBytes(13, 1);
     fs->BPB_RsvdSecCnt  = getBytes(14, 2);
     fs->BPB_NumFATs     = getBytes(16, 1);
-    fs->BPB_RootEntCnt  = getBytes(17, 2);
-    fs->BPB_TotSec16    = getBytes(19, 2);
     fs->BPB_Media       = getBytes(21, 1);
-    fs->BPB_FATSz16     = getBytes(22, 2);
     fs->BPB_SecPerTrk   = getBytes(24, 2);
     fs->BPB_NumHeads    = getBytes(26, 2);
     fs->BPB_HiddSec     = getBytes(28, 4);
@@ -45,8 +40,6 @@ void readBootSector(FAT32FileSystem* fs) {
     fs->BPB_RootClus    = getBytes(44, 4);
     fs->BPB_FSInfo      = getBytes(48, 2);
     fs->BPB_BkBootSec   = getBytes(50, 2);
-    //fs->BPB_Reserved    = getBytes(52, 12);
-    (fs->BPB_Reserved)[2] = (fs->BPB_Reserved)[1] = (fs->BPB_Reserved)[0] = 0x0;
     fs->BS_DrvNum       = getBytes(64, 1);
     fs->BS_Reserved1    = getBytes(65, 1);
     fs->BS_BootSig      = getBytes(66, 1);
@@ -54,6 +47,9 @@ void readBootSector(FAT32FileSystem* fs) {
     getBytestoChar(71, 11, fs->BS_VolLab);
     getBytestoChar(82, 8, fs->BS_FilSysType);
     fs->Signature_word  = getBytes(510, 2);
+
+    fs->path[0] = fs->BPB_RootClus;
+    fs->depth = 0;
     fs->currentCluster = NULL;
     fs->imageFile = imageFile;
 }
