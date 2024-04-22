@@ -114,4 +114,55 @@ void lsof(FAT32FileSystem* fs) {
     }
 }
 
+void lseek(FAT32FileSystem* fs, const char* filename, unsigned int offset) {
+    char formattedName[12];
+    formatDirectoryName(formattedName, filename);  // Ensure filename is in FAT32 8.3 format
+
+    // Search for the file in the list of open files
+    for (int i = 0; i < MAX_OPEN_FILES; i++) {
+        if (fs->openFileList[i].inUse && strncmp(fs->openFileList[i].filename, formattedName, 11) == 0) {
+            // File is open, now get the file size from its directory entry
+            void* clusterBuffer = malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus);
+            if (!clusterBuffer) {
+                printf("Error: Unable to allocate memory for reading directory cluster.\n");
+                return;
+            }
+            readCluster(fs, fs->openFileList[i].cluster, clusterBuffer);
+            DirectoryEntry* entries = (DirectoryEntry*)clusterBuffer;
+            unsigned int fileSize = 0;
+            bool found = false;
+
+            // Scan the directory to find the file size
+            for (int j = 0; j < fs->BPB_SecPerClus * fs->BPB_BytsPerSec / sizeof(DirectoryEntry); j++) {
+                if (strncmp(entries[j].DIR_Name, formattedName, 11) == 0) {
+                    fileSize = entries[j].DIR_FileSize;
+                    found = true;
+                    break;
+                }
+            }
+
+            free(clusterBuffer);
+
+            if (!found) {
+                printf("Error: Could not find the open file '%s' in its directory cluster to check size.\n", filename);
+                return;
+            }
+
+            if (offset > fileSize) {
+                printf("Error: Offset %u is larger than the size of the file '%s'.\n", offset, filename);
+                return;
+            }
+
+            // Update the offset for the file
+            fs->openFileList[i].offset = offset;
+            printf("Offset of file '%s' set to %u.\n", filename, offset);
+            return;
+        }
+    }
+    printf("Error: File '%s' is not open or does not exist.\n", filename);
+}
+
+
+
+
 
