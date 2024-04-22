@@ -4,6 +4,7 @@
 
 void info(FAT32FileSystem* fs){
     // Ensure all the boot sector data has been obtaied
+    /*
     printf("BS_jmpBoot:\t%x\n", fs->BS_jmpBoot);
     printf("BS_OEMName:\t%s\n", fs->BS_OEMName);
     printf("BPB_BytsPerSec:\t%x\n", fs->BPB_BytsPerSec);
@@ -32,4 +33,13 @@ void info(FAT32FileSystem* fs){
     printf("BS_VolLab:\t%s\n", fs->BS_VolLab);
     printf("BS_FilSysType:\t%s\n", fs->BS_FilSysType);
     printf("Signature_word:\t%x\n", fs->Signature_word);
+    */
+
+    printf("Bytes per Sector:\t%u\n", fs->BPB_BytsPerSec);
+    printf("Sectors per Cluster:\t%u\n", fs->BPB_SecPerClus);
+    printf("Root Cluster:\t\t%u\n", fs->BPB_RootClus);
+    printf("Total # of Clusters in Data Region:\t%u\n", fs->BPB_TotSec32);
+    printf("# of Entries in One FAT:\t%u\n", fs->BPB_FATSz32);
+    printf("Size of Image (in bytes):\t%u\n", 
+    (fs->BPB_TotSec32)*(fs->BPB_SecPerClus)*(fs->BPB_SecPerClus));
 }
