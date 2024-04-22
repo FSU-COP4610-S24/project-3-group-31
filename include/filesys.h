@@ -1,6 +1,6 @@
 # pragma once
 #include <stdint.h>
-#include "read.h"
+#include "openFileEntry.h"
 #include <sys/mman.h>
 #include <string.h>
 #include <stdio.h>
@@ -41,10 +41,8 @@ typedef struct {
     unsigned int path[64];  // Max depth of 64 :D
     unsigned int depth;
     char* filename;
-    FILE* imageFile;
-    
-    Open open_files[10];
-    unsigned int files_opened;
+    FILE* imageFile; 
+    OpenFileEntry openFileList[MAX_OPEN_FILES];
 } FAT32FileSystem;
 
 // FAT32 Directory Entry Structure
