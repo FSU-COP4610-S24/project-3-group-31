@@ -20,6 +20,17 @@ FAT32FileSystem* readFAT32FileSystem(const char* filename) {
 
     // use mmap to map the file to memory
 
+
+    fs->currentCluster = fs->BPB_RootClus;
+
+    fs->filename = strdup(filename);
+    if (fs->filename == NULL) {
+        printf("Memory allocation failed for filename.\n");
+        free(fs);
+        fclose(imageFile);
+        return NULL;
+    }
+
     fclose(imageFile);
 
     return fs;

@@ -46,7 +46,6 @@ void lexer(FAT32FileSystem* fs, char* file)
 		free(input);
 		free_tokens(tokens);
 	}
-	return 0;
 }
 
 char *get_input(void) {
