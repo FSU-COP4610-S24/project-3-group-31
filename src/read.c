@@ -1,5 +1,4 @@
 #include "read.h"
-#include "filesys.h"
 #include "string.h"
 
 void lsof(FAT32FileSystem* fs) {
@@ -21,7 +20,7 @@ void lsof(FAT32FileSystem* fs) {
 
 
 // what an ugly function this will become -_-
-char* getAsciiPath(FAT32FileSystem* fs, unsigned int* path, unsigned int depth, char* asciiPath) {
+char* getAsciiPath(FAT32FileSystem* fs, OpenFileEntry entry, char* asciiPath) {
     // to grab the whole cluster
     unsigned char* buffer = (char*) malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus);
     unsigned int clustNum = 0;

@@ -1,7 +1,8 @@
-#include "read.h"
+#pragma once
+#include "openFileEntry.h"
 #include "filesys.h"
 
 void lsof(FAT32FileSystem* fs);
 // To accomodate preexisting path
-char* getAsciiPath(unsigned int* path, unsigned int depth, char* buffer);   
+char* getAsciiPath(FAT32FileSystem* fs, OpenFileEntry entry, char* buffer);
 void openFile(FAT32FileSystem* fs, const char* filename, const char* mode);

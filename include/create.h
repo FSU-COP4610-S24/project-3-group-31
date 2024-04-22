@@ -1,3 +1,4 @@
+#pragma once
 #include "filesys.h"
 
 void mkdir(FAT32FileSystem* fs, const char* dirname);
