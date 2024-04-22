@@ -29,6 +29,8 @@ typedef struct {
     char BS_VolLab[12];
     char BS_FilSysType[9];
     unsigned int Signature_word;
+    unsigned int currentCluster;
+    char* filename;
 } FAT32FileSystem;
 
 FAT32FileSystem* readFAT32FileSystem(const char* filename); 
@@ -36,3 +38,5 @@ void readBootSector(FAT32FileSystem* fs);
 unsigned int getBytes(unsigned int offset, unsigned int size);
 void getBytestoChar(unsigned int offset, unsigned int size, char* string);
 unsigned int makeBigEndian(unsigned char *array, int bytes);
+void readCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer);
+unsigned int findDirectoryCluster(const void* buffer, const char* name);
