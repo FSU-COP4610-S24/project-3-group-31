@@ -1,14 +1,11 @@
-// This part will read in the filesystem
 #include "filesys.h"
 #include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 FILE* imageFile;
 unsigned short buffer[12];
 
 FAT32FileSystem* readFAT32FileSystem(const char* filename) {
-    imageFile = fopen(filename, "rb");
+    imageFile = fopen(filename, "rb+");     // Read and write in binary mode
     if (imageFile == NULL) {
         printf("Error: File '%s' does not exist.\n", filename);
         return NULL;
@@ -20,18 +17,9 @@ FAT32FileSystem* readFAT32FileSystem(const char* filename) {
 
     // use mmap to map the file to memory
 
-
     fs->currentCluster = fs->BPB_RootClus;
 
-    fs->filename = strdup(filename);
-    if (fs->filename == NULL) {
-        printf("Memory allocation failed for filename.\n");
-        free(fs);
-        fclose(imageFile);
-        return NULL;
-    }
-
-    fclose(imageFile);
+    // close imageFile in main
 
     return fs;
 }
@@ -67,6 +55,7 @@ void readBootSector(FAT32FileSystem* fs) {
     getBytestoChar(82, 8, fs->BS_FilSysType);
     fs->Signature_word  = getBytes(510, 2);
     fs->currentCluster = NULL;
+    fs->imageFile = imageFile;
 }
 
 unsigned int getBytes(unsigned int offset, unsigned int size)
@@ -168,6 +157,7 @@ int allocateDirectoryEntry(const char* name, int isDir, FAT32FileSystem* fs) {
     }
     return -1;  // No space available
 }
+
 
 // Update the FAT table to allocate a cluster
 void updateFATTable(FAT32FileSystem* fs, unsigned int cluster) {

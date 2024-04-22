@@ -1,7 +1,7 @@
 #include "filesys.h"
 
 // Function to create a directory in the FAT32 file system
-void mkdir(FAT32FileSystem* fs, const char* dirname) {
+void makeDir(FAT32FileSystem* fs, const char* dirname) {
     // Check if the directory already exists
     if (checkExists(dirname, fs)) {
         printf("Error: A directory or file named '%s' already exists.\n", dirname);

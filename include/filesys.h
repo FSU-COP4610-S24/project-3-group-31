@@ -1,4 +1,10 @@
 # pragma once
+#include <sys/mman.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 typedef struct {
     // Add necessary fields to represent the format of the FAT32 filesystem
     unsigned int BS_jmpBoot;
@@ -31,6 +37,7 @@ typedef struct {
     unsigned int Signature_word;
     unsigned int currentCluster;
     char* filename;
+    FILE* imageFile;
 } FAT32FileSystem;
 
 FAT32FileSystem* readFAT32FileSystem(const char* filename); 
