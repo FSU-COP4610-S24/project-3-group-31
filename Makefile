@@ -1,29 +1,36 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c99 -g
+SRC_DIR = src
+INCLUDE_DIR = include
+BIN_DIR = bin
 
 # Source files
-SRCS = src/main.c src/filesys.c
+SRCS = $(wildcard $(SRC_DIR)/*.c)
 
 # Object files
-OBJS = $(SRCS:.c=.o)
+OBJS = $(patsubst $(SRC_DIR)/%.c,%.o,$(SRCS))
 
 # Executable name
-EXEC = filesys
+EXEC = $(BIN_DIR)/filesys
 
 # Dependency files
-DEPS = src/filesys.h
+DEPS = $(wildcard $(INCLUDE_DIR)/*.h)
 
 # Default target
 all: $(EXEC)
 
 # Build executable
-$(EXEC): $(OBJS)
+$(EXEC): $(OBJS) | $(BIN_DIR)
 	$(CC) $(CFLAGS) -o $@ $^
 
 # Compile source files
-%.o: %.c $(DEPS)
-	$(CC) $(CFLAGS) -c -o $@ $<
+%.o: $(SRC_DIR)/%.c $(DEPS)
+	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c -o $@ $<
+
+# Create bin directory if it doesn't exist
+$(BIN_DIR):
+	mkdir -p $(BIN_DIR)
 
 # Clean target
 clean:
-	rm -f $(EXEC) $(OBJS)
+	rm -rf $(BIN_DIR) $(OBJS)
