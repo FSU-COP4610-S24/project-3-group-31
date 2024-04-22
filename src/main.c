@@ -12,14 +12,15 @@ int main(int argc, const char* argv[]) {
     if (fs == NULL) {
         return 1;
     }
-    testFunctionality(fs);
+    
+    info(fs);
     // Use the fs structure to access and navigate through the FAT32 filesystem
 
-    //free(fs);     Freeing causes a segfault??
+    free(fs);
     return 0;
 }
 
-void testFunctionality(FAT32FileSystem* fs) {
+void info(FAT32FileSystem* fs) {
     // Ensure all the boot sector data has been obtaied
     printf("BS_jmpBoot:\t%x\n", fs->BS_jmpBoot);
     printf("BS_OEMName:\t%s\n", fs->BS_OEMName);
@@ -49,4 +50,9 @@ void testFunctionality(FAT32FileSystem* fs) {
     printf("BS_VolLab:\t%s\n", fs->BS_VolLab);
     printf("BS_FilSysType:\t%s\n", fs->BS_FilSysType);
     printf("Signature_word:\t%x\n", fs->Signature_word);
+}
+
+void exit(FAT32FileSystem* fs) {
+    // This shit not done yet
+    free(fs);
 }
