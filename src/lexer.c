@@ -78,6 +78,17 @@ void lexer(FAT32FileSystem* fs)
 					openFile(fs, tokens->items[1], tokens->items[2]);
 				}
 			}
+			else if (strcmp(tokens->items[0], "close") == 0) {
+				if (tokens->size < 2) {
+					printf("Error: Missing file name for close command.\n");
+				}
+				else {
+					closeFile(fs, tokens->items[1]);
+				}
+			}
+			else if (strcmp(tokens->items[0], "lsof") == 0) {
+				lsof(fs);
+			}
 			else{
 				printf("Command not '%s' found.\n", tokens->items[0]);
 			}

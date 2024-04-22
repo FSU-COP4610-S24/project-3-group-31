@@ -93,9 +93,10 @@ void openFile(FAT32FileSystem* fs, const char* filename, const char* mode) {
         if (!fs->openFileList[i].inUse) {
             strncpy(fs->openFileList[i].filename, formattedName, 11);
             fs->openFileList[i].mode = fileMode;
-            fs->openFileList[i].cluster = fileCluster;
+            fs->openFileList[i].cluster = getCurrCluster(fs);
             fs->openFileList[i].offset = 0;
             fs->openFileList[i].inUse = true;
+            printf("File opened: %s at cluster %u\n", formattedName, getCurrCluster(fs));
             printf("File '%s' opened successfully in mode %s.\n", filename, mode);
             return;
         }
@@ -103,4 +104,61 @@ void openFile(FAT32FileSystem* fs, const char* filename, const char* mode) {
 
     printf("Error: Maximum open files limit reached.\n");
 }
+
+void closeFile(FAT32FileSystem* fs, const char* filename) {
+    char formattedName[12];
+    formatDirectoryName(formattedName, filename);  // Format name to FAT32 8.3 format
+    printf("Current directory cluster: %u\n", getCurrCluster(fs));
+
+
+    // Attempt to find and close the file in the open files list
+    for (int i = 0; i < MAX_OPEN_FILES; i++) {
+        printf("Trying to close file in cluster: %u, file cluster: %u\n", getCurrCluster(fs), fs->openFileList[i].cluster);
+        if (fs->openFileList[i].inUse && strncmp(fs->openFileList[i].filename, formattedName, 11) == 0) {
+            // Check if the file's starting cluster matches the current directory's cluster
+            // This ensures the file is in the current working directory
+            if (fs->openFileList[i].cluster == getCurrCluster(fs)) {
+                fs->openFileList[i].inUse = false;  // Mark the file as closed
+                printf("File '%s' closed successfully.\n", filename);
+                return;
+            }
+        }
+    }
+
+    printf("Error: File '%s' is not open or does not exist in the current directory.\n", filename);
+}
+
+void lsof(FAT32FileSystem* fs) {
+    bool anyOpen = false;
+    printf("Index\tFile Name\tMode\t\tOffset\t\tPath\n");
+
+    for (int i = 0; i < MAX_OPEN_FILES; i++) {
+        if (fs->openFileList[i].inUse) {
+            anyOpen = true;
+            char modeDesc[20];
+            switch (fs->openFileList[i].mode) {
+            case 1: strcpy(modeDesc, "Read-Only"); break;
+            case 2: strcpy(modeDesc, "Write-Only"); break;
+            case 3: strcpy(modeDesc, "Read/Write"); break;
+            default: strcpy(modeDesc, "Unknown Mode"); break;
+            }
+            // SUPER IMPORTANT BELOW PLZ FIX
+
+            char path[256] = "/current/path/"; // This needs to be gotten from a func we haven't made don't ship like this plox plz
+
+            // Fix the spacing between them also
+            printf("%d\t%s\t\t%s\t%d\t\t%s\n",
+                i,                          // Index
+                fs->openFileList[i].filename, // File Name
+                modeDesc,                   // Mode
+                fs->openFileList[i].offset, // Offset
+                path);                      // Path (Static example, replace with dynamic path if available)
+        }
+    }
+
+    if (!anyOpen) {
+        printf("No files are currently opened.\n");
+    }
+}
+
 
