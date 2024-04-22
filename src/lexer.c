@@ -135,7 +135,7 @@ void upOneDir(char* path) {
 	do {
 	nextSlash = lastSlash;
 	lastSlash = strchr(path, '/');
-	} while (lastSlash != NULL)
+	} while (lastSlash != NULL);
 	
 	*lastSlash ='\0';
 }
