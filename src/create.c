@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <stdbool.h>
+
 
 void mkdir(FAT32FileSystem* fs, const char* dirname) {
     // Buffer to read the current directory's content
@@ -44,28 +46,29 @@ void mkdir(FAT32FileSystem* fs, const char* dirname) {
     free(buffer);
 }
 
-// Utility to initialize a directory cluster with '.' and '..'
 void initDirectoryCluster(FAT32FileSystem* fs, unsigned int cluster, unsigned int parentCluster) {
     // Allocate buffer to represent a cluster
-    void* clusterBuffer = calloc(fs->BPB_BytsPerSec, fs->BPB_SecPerClus);
+    void* clusterBuffer = calloc(1, fs->BPB_BytsPerSec * fs->BPB_SecPerClus);
     if (!clusterBuffer) {
         printf("Failed to allocate memory for directory initialization.\n");
         return;
     }
 
-    // Create '.' entry
+    // Set up the '.' directory entry for the current directory
     DirectoryEntry* dotEntry = (DirectoryEntry*)clusterBuffer;
-    strcpy(dotEntry->DIR_Name, ".          ");
+    memcpy(dotEntry->DIR_Name, ".          ", 11);
     dotEntry->DIR_Attr = ATTR_DIRECTORY;
     dotEntry->DIR_FstClusHI = (cluster >> 16) & 0xFFFF;
     dotEntry->DIR_FstClusLO = cluster & 0xFFFF;
+    dotEntry->DIR_FileSize = 0; // Directory size is typically 0 in FAT32
 
-    // Create '..' entry
+    // Set up the '..' directory entry for the parent directory
     DirectoryEntry* dotDotEntry = (DirectoryEntry*)((char*)clusterBuffer + sizeof(DirectoryEntry));
-    strcpy(dotDotEntry->DIR_Name, "..         ");
+    memcpy(dotDotEntry->DIR_Name, "..         ", 11);
     dotDotEntry->DIR_Attr = ATTR_DIRECTORY;
     dotDotEntry->DIR_FstClusHI = (parentCluster >> 16) & 0xFFFF;
     dotDotEntry->DIR_FstClusLO = parentCluster & 0xFFFF;
+    dotDotEntry->DIR_FileSize = 0; // Directory size is typically 0
 
     // Write the initialized cluster back to the disk/file
     writeCluster(fs, cluster, clusterBuffer);
