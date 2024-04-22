@@ -7,9 +7,11 @@
 
 void lexer(FAT32FileSystem* fs, char* file)
 {
+	char* imageName;
+	getImageName(fs->filename, imageName);
 	while (1) {
 		// FIXME: Find a way to show path from inside filesystem
-		printf("%s/>", fs->BS_OEMName);
+		printf("%s/>", imageName);
 		// free(pwd);
 
 		char *input = get_input();
@@ -38,7 +40,6 @@ void lexer(FAT32FileSystem* fs, char* file)
 		free(input);
 		free_tokens(tokens);
 	}
-	return 0;
 }
 
 char *get_input(void) {
@@ -102,4 +103,12 @@ void free_tokens(tokenlist *tokens) {
 		free(tokens->items[i]);
 	free(tokens->items);
 	free(tokens);
+}
+
+void getImageName(char* filename, char* buffer) {
+	buffer = strchr(filename, '/');
+	if(buffer != NULL)
+		buffer++;
+	else
+		strcpy(buffer, filename);
 }

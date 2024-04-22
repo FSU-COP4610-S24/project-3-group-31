@@ -55,6 +55,7 @@ void readBootSector(FAT32FileSystem* fs) {
     getBytestoChar(71, 11, fs->BS_VolLab);
     getBytestoChar(82, 8, fs->BS_FilSysType);
     fs->Signature_word  = getBytes(510, 2);
+    fs->currentCluster = NULL;
 }
 
 unsigned int getBytes(unsigned int offset, unsigned int size)
