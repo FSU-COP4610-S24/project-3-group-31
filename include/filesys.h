@@ -1,7 +1,6 @@
 # pragma once
 #include <stdint.h>
 #include "read.h"
-#include <sys/mman.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,12 +37,12 @@ typedef struct {
     char BS_FilSysType[9];
     unsigned int Signature_word;
     
-    unsigned int path[64];  // Max depth of 64 :D
+    unsigned int path[32];  // Max depth of 32 :D
     unsigned int depth;
     char* filename;
     FILE* imageFile;
     
-    Open open_files[10];
+    OpenFileEntry open_files[10];
     unsigned int files_opened;
 } FAT32FileSystem;
 

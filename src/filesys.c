@@ -52,7 +52,7 @@ void readBootSector(FAT32FileSystem* fs) {
     fs->path[0] = fs->BPB_RootClus;
     fs->depth = 0;
     fs->imageFile = imageFile;
-    
+    fs->files_opened = 0;
 }
 
 unsigned int getBytes(unsigned int offset, unsigned int size)
@@ -245,3 +245,4 @@ bool goToParent(FAT32FileSystem* fs) {
 void updateCurrCluster(FAT32FileSystem* fs, unsigned int newClust) {
     fs->path[++(fs->depth)] = newClust;
 }
+
