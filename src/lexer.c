@@ -52,6 +52,19 @@ void lexer(FAT32FileSystem* fs)
 					printf("Directory '%s' created successfully.\n", tokens->items[1]);
 				}
 			}
+			else if (strcmp(tokens->items[0], "creat") == 0) {
+				if (tokens->size < 2) {
+					printf("Error: Missing file name.\n");
+				}
+				else {
+					if(createFile(fs, tokens->items[1])){
+						printf("Error: Directory is full, no free entries found.\n");
+					}
+					else {
+						printf("File '%s' created successfully.\n", tokens->items[1]);
+					}
+				}
+			}
 			else{
 				printf("Command not '%s' found.\n", tokens->items[0]);
 			}

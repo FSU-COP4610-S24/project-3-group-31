@@ -6,23 +6,22 @@
 #include <ctype.h>
 #include <stdbool.h>
 
-
 void mkdir(FAT32FileSystem* fs, const char* dirname) {
     // Buffer to read the current directory's content
-    void* buffer = malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus);
-    if (!buffer) {
+    void* clusterBuffer = malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus);
+    if (!clusterBuffer) {
         printf("Error allocating memory for directory buffer.\n");
         return;
     }
 
     // Read the current cluster (assumed to be the current directory)
-    readCluster(fs, getCurrCluster(fs), buffer);
+    readCluster(fs, getCurrCluster(fs), clusterBuffer);
 
     // Check if the directory already exists
-    unsigned int dirCluster = findDirectoryCluster(buffer, dirname);
+    unsigned int dirCluster = findDirectoryCluster(clusterBuffer, dirname);
     if (dirCluster != 0) {
         printf("Error: Directory or file named '%s' already exists.\n", dirname);
-        free(buffer);
+        free(clusterBuffer);
         return;
     }
 
@@ -30,7 +29,7 @@ void mkdir(FAT32FileSystem* fs, const char* dirname) {
     unsigned int newDirCluster = findFreeCluster(fs);
     if (newDirCluster == 0) {
         printf("Error: No free cluster available.\n");
-        free(buffer);
+        free(clusterBuffer);
         return;
     }
 
@@ -43,7 +42,7 @@ void mkdir(FAT32FileSystem* fs, const char* dirname) {
         freeCluster(fs, newDirCluster);
     }
 
-    free(buffer);
+    free(clusterBuffer);
 }
 
 void initDirectoryCluster(FAT32FileSystem* fs, unsigned int cluster, unsigned int parentCluster) {
@@ -74,4 +73,66 @@ void initDirectoryCluster(FAT32FileSystem* fs, unsigned int cluster, unsigned in
     writeCluster(fs, cluster, clusterBuffer);
 
     free(clusterBuffer);
+}
+
+int createFile(FAT32FileSystem* fs, const char* filename) {
+    if (!fs || !filename) {
+        printf("Invalid parameters.\n");
+        return -1;
+    }
+
+    void* clusterBuffer = malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus);
+    if (!clusterBuffer) {
+        printf("Failed to allocate memory for directory buffer.\n");
+        return -1;
+    }
+
+    // Read the current directory cluster
+    readCluster(fs, getCurrCluster(fs), clusterBuffer);
+    DirectoryEntry* entries = (DirectoryEntry*)clusterBuffer;
+
+    char formattedName[12];
+    formatDirectoryName(formattedName, filename);
+
+    // Check for existing entry with the same name
+    for (int i = 0; i < fs->BPB_SecPerClus * fs->BPB_BytsPerSec / sizeof(DirectoryEntry); i++) {
+        if (strncmp(entries[i].DIR_Name, formattedName, 11) == 0) {
+            printf("Error: File '%s' already exists.\n", filename);
+            free(clusterBuffer);
+            return -1;
+        }
+    }
+
+    // Find a free directory entry in the current directory
+    unsigned int freeCluster = 0;
+    int found = 0;
+    for (int i = 0; i < fs->BPB_SecPerClus * fs->BPB_BytsPerSec / sizeof(DirectoryEntry); i++) {
+        if (entries[i].DIR_Name[0] == 0x00 || entries[i].DIR_Name[0] == 0xE5) { // Free or deleted entry
+            freeCluster = findFreeCluster(fs);
+            if (freeCluster == 0) {
+                printf("Error: No free clusters available.\n");
+                free(clusterBuffer);
+                return -1;
+            }
+
+            // Initialize the directory entry
+            memset(&entries[i], 0, sizeof(DirectoryEntry));
+            memcpy(entries[i].DIR_Name, formattedName, 11);
+            entries[i].DIR_Attr = ATTR_ARCHIVE; // Normal file
+            entries[i].DIR_FstClusHI = (freeCluster >> 16) & 0xFFFF;
+            entries[i].DIR_FstClusLO = freeCluster & 0xFFFF;
+            entries[i].DIR_FileSize = 0; // New file, size 0
+
+            writeCluster(fs, getCurrCluster(fs), clusterBuffer);
+            found = 1;
+            break;
+        }
+    }
+
+    free(clusterBuffer);
+    if (!found) {
+        return -1;
+    }
+
+    return 0; // Success
 }
