@@ -18,7 +18,7 @@ void mkdir(FAT32FileSystem* fs, const char* dirname) {
     readCluster(fs, getCurrCluster(fs), clusterBuffer);
 
     // Check if the directory already exists
-    unsigned int dirCluster = findDirectoryCluster(clusterBuffer, dirname);
+    unsigned int dirCluster = findDirectoryCluster(clusterBuffer, dirname, true);
     if (dirCluster != 0) {
         printf("Error: Directory or file named '%s' already exists.\n", dirname);
         free(clusterBuffer);

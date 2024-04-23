@@ -79,7 +79,8 @@ void getBytestoChar(unsigned int offset, unsigned int size, char* string);
 unsigned int makeBigEndian(unsigned char *array, int bytes);
 void readCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer);
 void writeCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer);
-DirectoryEntry* findDirectoryCluster(const void* buffer, const char* name);
+// Modified this to enable locating files, since directories and file follow the same structure
+DirectoryEntry* findDirectoryCluster(const void* buffer, const char* name, bool isDir);
 unsigned int findFreeCluster(FAT32FileSystem* fs);
 // poor implementation of directory entry for full project use :/
 int addDirectoryEntry(FAT32FileSystem* fs, unsigned int directoryCluster, const char* entryName, unsigned int entryCluster, int isDirectory);

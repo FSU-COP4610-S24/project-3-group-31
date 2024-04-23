@@ -1,6 +1,7 @@
 #include "lexer.h"
 #include "info.h"
 #include "navigate.h"
+#include "write.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -109,6 +110,18 @@ void lexer(FAT32FileSystem* fs)
 				else {
 					unsigned int size = atoi(tokens->items[2]); // Convert size from string to integer
 					readCommand(fs, tokens->items[1], size);
+				}
+			}
+			else if (strcmp(tokens->items[0], "write") == 0) {
+				if (tokens->size < 3) {
+					printf("Usage: write [FILENAME] [STRING]\n");
+				}
+				else{
+					for (int i = 3; i < tokens->size; i++) {
+						strcat(tokens->items[2]," ");
+						strcat(tokens->items[2], tokens->items[i]);
+					}
+					writeHandler(fs, tokens->items[1], tokens->items[2]);
 				}
 			}
 			else{

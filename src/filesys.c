@@ -88,13 +88,13 @@ void readCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer) 
     fread(buffer, fs->BPB_BytsPerSec, fs->BPB_SecPerClus, fs->imageFile);
 }
 
-DirectoryEntry* findDirectoryCluster(const void* buffer, const char* name) {
+DirectoryEntry* findDirectoryCluster(const void* buffer, const char* name, bool isDir) {
     char formattedName[12];
     formatDirectoryName(formattedName, name);  // Make sure this uses the same formatting as in `addDirectoryEntry`
 
     const unsigned char* p = buffer;
     while (*p != 0 && *p != 0xE5) {  // Continue past deleted entries
-        if ((p[11] & ATTR_DIRECTORY) && !(p[11] & ATTR_VOLUME_ID)) {
+        if (isDir ? (p[11] & ATTR_DIRECTORY) && !(p[11] & ATTR_VOLUME_ID) : (p[11] & ATTR_ARCHIVE)) {
             if (strncmp((const char*)p, formattedName, 11) == 0) {
                 return makeDirEntry((void*)p);
             }
