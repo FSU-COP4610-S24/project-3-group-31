@@ -166,7 +166,6 @@ void lseek(FAT32FileSystem* fs, const char* filename, unsigned int offset) {
 
 // Read doesn't work might be due to read file not calculating right spot to check or because the spot given in the first
 // place is wrong, I made it so that the file saves its own cluster but it hasn't made a huge diffenrence so im kinda lost
-
 void readCommand(FAT32FileSystem* fs, const char* filename, unsigned int size) {
     char formattedName[12];
     formatDirectoryName(formattedName, filename);
@@ -214,7 +213,12 @@ void readCommand(FAT32FileSystem* fs, const char* filename, unsigned int size) {
 
 unsigned int readFile(FAT32FileSystem* fs, unsigned int startCluster, unsigned int offset, unsigned char* buffer, unsigned int bytesToRead) {
     // Convert offset to cluster number (assuming offset is within file size limits, already checked)
-    unsigned long clusterOffset = (startCluster - 2) * fs->BPB_SecPerClus + (offset / fs->BPB_BytsPerSec) * fs->BPB_BytsPerSec;
+    unsigned long rootDirOffset = fs->BPB_RsvdSecCnt * fs->BPB_BytsPerSec + fs->BPB_NumFATs * fs->BPB_FATSz32 * fs->BPB_BytsPerSec;
+    unsigned long clusterOffset = rootDirOffset + (((startCluster >> 16) & 0xFFFF) - 2) * fs->BPB_SecPerClus * fs->BPB_BytsPerSec
+                                 + (startCluster & 0xFFFF) * fs->BPB_BytsPerSec + offset;
+    // I dont know why, but the above calculation adds a 1 in the 16^9 place that shouldn't be there, so this should fix it
+    clusterOffset = clusterOffset & 0xFFFFFFFF;
+    //unsigned long clusterOffset = (startCluster - 2) * fs->BPB_SecPerClus + (offset / fs->BPB_BytsPerSec) * fs->BPB_BytsPerSec;
     fseek(fs->imageFile, clusterOffset, SEEK_SET);
 
     // Adjust read size if it goes beyond the file size (this requires knowing the file size which should be managed elsewhere)
