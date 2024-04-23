@@ -82,7 +82,8 @@ unsigned int makeBigEndian(unsigned char *array, int bytes) {
 }
 
 void readCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer) {
-    unsigned long offset = ((clusterNumber - 2) * fs->BPB_SecPerClus + fs->BPB_RsvdSecCnt + (fs->BPB_NumFATs * fs->BPB_FATSz32)) * fs->BPB_BytsPerSec;
+    //unsigned long offset = ((clusterNumber - 2) * fs->BPB_SecPerClus + fs->BPB_RsvdSecCnt + (fs->BPB_NumFATs * fs->BPB_FATSz32)) * fs->BPB_BytsPerSec;
+    unsigned long offset = getClusterOffset(fs, clusterNumber);
     fseek(fs->imageFile, offset, SEEK_SET);
     fread(buffer, fs->BPB_BytsPerSec, fs->BPB_SecPerClus, fs->imageFile);
 }
@@ -110,7 +111,8 @@ void writeCluster(FAT32FileSystem* fs, unsigned int clusterNumber, void* buffer)
     }
 
     // Calculate the byte offset to the start of the desired cluster
-    unsigned long clusterOffset = ((clusterNumber - 2) * fs->BPB_SecPerClus + fs->BPB_RsvdSecCnt + (fs->BPB_NumFATs * fs->BPB_FATSz32)) * fs->BPB_BytsPerSec;
+    //unsigned long clusterOffset = ((clusterNumber - 2) * fs->BPB_SecPerClus + fs->BPB_RsvdSecCnt + (fs->BPB_NumFATs * fs->BPB_FATSz32)) * fs->BPB_BytsPerSec;
+    unsigned long clusterOffset = getClusterOffset(fs, clusterNumber);
 
     if (fs->imageFile == NULL) {
         fprintf(stderr, "Error opening filesystem image file '%s'.\n", fs->filename);
@@ -282,4 +284,15 @@ DirEntryList* establishRoot(FAT32FileSystem* fs)
     rootDir->depth = 0;
     rootDir->entry->DIR_Attr = 0x10;
     return rootDir;
+}
+
+unsigned long getClusterOffset(FAT32FileSystem* fs, unsigned int startCluster) {
+    // Convert offset to cluster number (assuming offset is within file size limits, already checked)
+    unsigned long rootDirOffset = fs->BPB_RsvdSecCnt * fs->BPB_BytsPerSec + fs->BPB_NumFATs * fs->BPB_FATSz32 * fs->BPB_BytsPerSec;
+    unsigned long clusterOffset = rootDirOffset + (((startCluster >> 16) & 0xFFFF) - 2) * fs->BPB_SecPerClus * fs->BPB_BytsPerSec
+                                 + (startCluster & 0xFFFF) * fs->BPB_BytsPerSec;
+    // I dont know why, but the above calculation adds a 1 in the 16^9 place that shouldn't be there, so this should fix it
+    // but longs should only be 8 bytes, how can there be anything in the 16^9 place?
+    clusterOffset = clusterOffset & 0xFFFFFFFF;
+    return clusterOffset;
 }

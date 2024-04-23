@@ -91,3 +91,4 @@ void formatDirectoryName(char* dest, const char* src);
 DirectoryEntry* makeDirEntry(void* clustStart);
 unsigned int getHILO(DirectoryEntry *entry);
 DirEntryList* establishRoot(FAT32FileSystem* fs);
+unsigned long getClusterOffset(FAT32FileSystem*, unsigned int);

@@ -8,6 +8,7 @@
 void lexer(FAT32FileSystem* fs)
 {	
 	char path[256] = "fat32.img";
+	char buffer[12];
 	bool valid;
 	while (1) {
 		// FIXME: Find a way to show path from inside filesystem
