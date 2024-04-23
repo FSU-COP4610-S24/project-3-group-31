@@ -1,2 +1,2 @@
-break upOneDir
+break cd
 

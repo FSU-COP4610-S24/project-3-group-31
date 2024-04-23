@@ -40,6 +40,9 @@ void lexer(FAT32FileSystem* fs)
 						else
 							printf("Failed to move up a directory, you must already be at root.\n");
 					}
+					else if (strcmp(tokens->items[1], ".") == 0) {
+						printf("Directory at current directory.\n");
+					}
 					else {
 						if (cd(fs, tokens->items[1])) {
 							strcat(path, "/");
