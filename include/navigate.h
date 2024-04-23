@@ -27,6 +27,10 @@ void ls(FAT32FileSystem* fs) {
     readCluster(fs, getCurrCluster(fs), buffer);
     const unsigned char* p = buffer;
     while (*p != 0) {
+        if (*p == 0xE5) {
+            p += 32;
+            continue;
+        }
         if (p[11] == 0x10 || p[11] == 0x20) {
             char entryName[12];
             strncpy(entryName, (const char*)p, 11);
