@@ -18,10 +18,12 @@ void openFile(FAT32FileSystem* fs, const char* filename, const char* mode) {
     char formattedName[12];
     formatDirectoryName(formattedName, filename);
     unsigned int fileCluster = 0;
+    unsigned int fileSize = 0;
 
     for (int i = 0; i < fs->BPB_SecPerClus * fs->BPB_BytsPerSec / sizeof(DirectoryEntry); i++) {
         if (strncmp(entries[i].DIR_Name, formattedName, 11) == 0) {
             fileCluster = ((unsigned int)entries[i].DIR_FstClusHI << 16) | entries[i].DIR_FstClusLO;
+            fileSize = (unsigned int)entries[i].DIR_FileSize;
             break;
         }
     }
@@ -51,6 +53,7 @@ void openFile(FAT32FileSystem* fs, const char* filename, const char* mode) {
             fs->openFileList[i].fileCluster = fileCluster;
             fs->openFileList[i].offset = 0;
             fs->openFileList[i].inUse = true;
+            fs->openFileList[i].fileSize = fileSize;
             getPath(fs->openFileList[i].path, fs);
             printf("File opened: %s at cluster %u\n", formattedName, getCurrCluster(fs));
             printf("File opened: %s at cluster %u\n", formattedName, fileCluster);
@@ -178,6 +181,8 @@ void readCommand(FAT32FileSystem* fs, const char* filename, unsigned int size) {
                 printf("Error: File '%s' is not open for reading.\n", filename);
                 return;
             }
+            if (fs->openFileList[i].offset + size > fs->openFileList[i].fileSize)
+                size = fs->openFileList[i].fileSize - fs->openFileList[i].offset;
 
             // Calculate the start cluster and convert the offset to the address
             unsigned int startCluster = fs->openFileList[i].fileCluster;
@@ -217,8 +222,8 @@ unsigned int readFile(FAT32FileSystem* fs, unsigned int startCluster, unsigned i
     unsigned long clusterOffset = rootDirOffset + (((startCluster >> 16) & 0xFFFF) - 2) * fs->BPB_SecPerClus * fs->BPB_BytsPerSec
                                  + (startCluster & 0xFFFF) * fs->BPB_BytsPerSec + offset;
     // I dont know why, but the above calculation adds a 1 in the 16^9 place that shouldn't be there, so this should fix it
+    // but longs should only be 8 bytes, how can there be anything in the 16^9 place?
     clusterOffset = clusterOffset & 0xFFFFFFFF;
-    //unsigned long clusterOffset = (startCluster - 2) * fs->BPB_SecPerClus + (offset / fs->BPB_BytsPerSec) * fs->BPB_BytsPerSec;
     fseek(fs->imageFile, clusterOffset, SEEK_SET);
 
     // Adjust read size if it goes beyond the file size (this requires knowing the file size which should be managed elsewhere)
@@ -229,6 +234,7 @@ unsigned int readFile(FAT32FileSystem* fs, unsigned int startCluster, unsigned i
 
 char* getPath(char* path, FAT32FileSystem* fs) {
     DirEntryList* start = fs->currEntry;
+    char buffer[12];
     while (start->prev != NULL)
         start = start->prev;
 
