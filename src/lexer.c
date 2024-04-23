@@ -6,6 +6,9 @@
 #include <string.h>
 #include "create.h"
 #include "read.h"
+#include "delete.h"
+#include "write.h"
+
 
 void lexer(FAT32FileSystem* fs)
 {	
@@ -122,7 +125,24 @@ void lexer(FAT32FileSystem* fs)
 						strcat(tokens->items[2]," ");
 						strcat(tokens->items[2], tokens->items[i]);
 					}
+
 					writeHandler(fs, tokens->items[1], tokens->items[2]);
+				}
+			}
+			else if (strcmp(tokens->items[0], "rmdir") == 0) {
+				if (tokens->size < 2) {
+					printf("Error: Missing directory name.\n");
+				}
+				else {
+					rmdir(fs, tokens->items[1]);
+				}
+			}
+			else if (strcmp(tokens->items[0], "rm") == 0) {
+				if (tokens->size < 2) {
+					printf("Error: Missing file name.\n");
+				}
+				else {
+					rm(fs, tokens->items[1]);
 				}
 			}
 			else{

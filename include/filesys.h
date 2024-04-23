@@ -93,3 +93,6 @@ DirectoryEntry* makeDirEntry(void* clustStart);
 unsigned int getHILO(DirectoryEntry *entry);
 DirEntryList* establishRoot(FAT32FileSystem* fs);
 unsigned long getClusterOffset(FAT32FileSystem*, unsigned int);
+bool isDirectoryEmpty(FAT32FileSystem* fs, unsigned int cluster);
+bool isFileOpened(FAT32FileSystem* fs, DirectoryEntry* entry);
+DirectoryEntry* findDirectoryEntry(FAT32FileSystem* fs, unsigned int clusterNumber, const char* name, bool isDir);

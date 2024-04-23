@@ -296,3 +296,71 @@ unsigned long getClusterOffset(FAT32FileSystem* fs, unsigned int startCluster) {
     clusterOffset = clusterOffset & 0xFFFFFFFF;
     return clusterOffset;
 }
+
+bool isDirectoryEmpty(FAT32FileSystem* fs, unsigned int cluster) {
+    unsigned char* buffer = malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus);
+    if (buffer == NULL) return false;
+
+    readCluster(fs, cluster, buffer);
+    DirectoryEntry* entry = (DirectoryEntry*)buffer;
+
+    for (int i = 0; i < fs->BPB_SecPerClus * fs->BPB_BytsPerSec / sizeof(DirectoryEntry); ++i, ++entry) {
+        if (entry->DIR_Name[0] == 0) break;
+        if (entry->DIR_Name[0] == 0xE5) continue;
+
+        if (!(strncmp(entry->DIR_Name, ".", 1) == 0 || strncmp(entry->DIR_Name, "..", 2) == 0)) {
+            free(buffer);
+            return false;
+        }
+    }
+
+    free(buffer);
+    return true;
+}
+bool isFileOpened(FAT32FileSystem* fs, DirectoryEntry* entry) {
+    unsigned int fileCluster = getHILO(entry);
+
+    for (int i = 0; i < MAX_OPEN_FILES; i++) {
+        if (fs->openFileList[i].inUse && fileCluster == fs->openFileList[i].fileCluster) {
+            return true;
+        }
+    }
+
+    return false;
+}
+DirectoryEntry* findDirectoryEntry(FAT32FileSystem* fs, unsigned int clusterNumber, const char* name, bool isDir) {
+    void* buffer = malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus);
+    if (!buffer) {
+        fprintf(stderr, "Memory allocation failed.\n");
+        return NULL;
+    }
+
+    readCluster(fs, clusterNumber, buffer);
+
+    char formattedName[12];
+    memset(formattedName, ' ', 11);
+    formattedName[11] = '\0';
+    formatDirectoryName(formattedName, name);
+
+    DirectoryEntry* entry = (DirectoryEntry*)buffer;
+    for (int i = 0; i < fs->BPB_SecPerClus * fs->BPB_BytsPerSec / sizeof(DirectoryEntry); i++, entry++) {
+        if (entry->DIR_Name[0] == 0x00) {
+            break;
+        }
+        if (entry->DIR_Name[0] == 0xE5) {
+            continue;
+        }
+
+        if ((isDir && (entry->DIR_Attr & ATTR_DIRECTORY)) || (!isDir && !(entry->DIR_Attr & ATTR_DIRECTORY))) {
+            if (strncmp(entry->DIR_Name, formattedName, 11) == 0) {
+                DirectoryEntry* foundEntry = malloc(sizeof(DirectoryEntry));
+                memcpy(foundEntry, entry, sizeof(DirectoryEntry));
+                free(buffer);  
+                return foundEntry;
+            }
+        }
+    }
+
+    free(buffer);  
+    return NULL;   
+}
