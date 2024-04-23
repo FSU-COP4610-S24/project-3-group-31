@@ -69,13 +69,12 @@ unsigned int getNextCluster(FAT32FileSystem* fs, unsigned int currentCluster) {
 
 
 
-
 void rmdir(FAT32FileSystem* fs, const char* dirname) {
     char formattedName[12];
     formatDirectoryName(formattedName, dirname);
 
     DirectoryEntry* entry = findDirectoryEntry(fs, getCurrCluster(fs), formattedName, true);
-    if (entry == NULL) {
+    if (!entry) {
         printf("Error: Directory '%s' does not exist.\n", dirname);
         return;
     }
@@ -92,10 +91,18 @@ void rmdir(FAT32FileSystem* fs, const char* dirname) {
         return;
     }
 
-    entry->DIR_Name[0] = 0xE5;
-    writeCluster(fs, getCurrCluster(fs), entry);
+    void* clusterBuffer = malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus);
+    if (!clusterBuffer) {
+        printf("Error: Memory allocation failed.\n");
+        free(entry);
+        return;
+    }
+    readCluster(fs, getCurrCluster(fs), clusterBuffer);
+    modifyDirectoryEntry(clusterBuffer, formattedName, 0xE5);
+    writeCluster(fs, getCurrCluster(fs), clusterBuffer);
+    free(clusterBuffer);
 
-    freeCluster(fs, getHILO(entry));
-    printf("Directory '%s' removed successfully.\n", dirname);
+    //freeClusterChain(fs, getHILO(entry));
     free(entry);
+    printf("Directory '%s' removed successfully.\n", dirname);
 }
