@@ -93,7 +93,11 @@ DirectoryEntry* findDirectoryCluster(const void* buffer, const char* name, bool 
     formatDirectoryName(formattedName, name);  // Make sure this uses the same formatting as in `addDirectoryEntry`
 
     const unsigned char* p = buffer;
-    while (*p != 0 && *p != 0xE5) {  // Continue past deleted entries
+    while (*p != 0) {  // Continue past deleted entries
+        if (*p == 0xE5) {
+            p += 32;
+            continue;
+        }
         if (isDir ? (p[11] & ATTR_DIRECTORY) && !(p[11] & ATTR_VOLUME_ID) : (p[11] & ATTR_ARCHIVE)) {
             if (strncmp((const char*)p, formattedName, 11) == 0) {
                 return makeDirEntry((void*)p);
