@@ -9,6 +9,6 @@ typedef struct {
     unsigned int offset;        // Current offset in the file
     unsigned int fileCluster;   // start cluster of file
     bool inUse;                 // Indicates if the entry is in use
-    char path[128];            // Just keep path as a string for simplicity
+    char path[128];             // Just keep path as a string for simplicity
     unsigned int fileSize;
 } OpenFileEntry;

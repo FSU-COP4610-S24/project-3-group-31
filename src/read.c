@@ -217,13 +217,7 @@ void readCommand(FAT32FileSystem* fs, const char* filename, unsigned int size) {
 }
 
 unsigned int readFile(FAT32FileSystem* fs, unsigned int startCluster, unsigned int offset, unsigned char* buffer, unsigned int bytesToRead) {
-    // Convert offset to cluster number (assuming offset is within file size limits, already checked)
-    unsigned long rootDirOffset = fs->BPB_RsvdSecCnt * fs->BPB_BytsPerSec + fs->BPB_NumFATs * fs->BPB_FATSz32 * fs->BPB_BytsPerSec;
-    unsigned long clusterOffset = rootDirOffset + (((startCluster >> 16) & 0xFFFF) - 2) * fs->BPB_SecPerClus * fs->BPB_BytsPerSec
-                                 + (startCluster & 0xFFFF) * fs->BPB_BytsPerSec + offset;
-    // I dont know why, but the above calculation adds a 1 in the 16^9 place that shouldn't be there, so this should fix it
-    // but longs should only be 8 bytes, how can there be anything in the 16^9 place?
-    clusterOffset = clusterOffset & 0xFFFFFFFF;
+    unsigned long clusterOffset = getClusterOffset(fs, startCluster);
     fseek(fs->imageFile, clusterOffset, SEEK_SET);
 
     // Adjust read size if it goes beyond the file size (this requires knowing the file size which should be managed elsewhere)
@@ -248,4 +242,3 @@ char* getPath(char* path, FAT32FileSystem* fs) {
 
     return path;
 }
-
