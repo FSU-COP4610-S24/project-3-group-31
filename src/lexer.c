@@ -1,10 +1,11 @@
 #include "lexer.h"
 #include "info.h"
 #include "navigate.h"
-#include "write.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "create.h"
+#include "read.h"
 
 void lexer(FAT32FileSystem* fs)
 {	
