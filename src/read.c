@@ -1,12 +1,6 @@
 #include "read.h"
 #include "string.h"
 
-// what an ugly function this will become -_-
-// FIXME: DELETE THIS FUNCTION
-// Instead, change the fs struct to include a doubly linked list of the DirectoryEntry stuff
-// such that the name and HI and LO numbers are retained.
-// Memory technical debt.
-
 void openFile(FAT32FileSystem* fs, const char* filename, const char* mode) {
     // Check if file is already open
     for (int i = 0; i < MAX_OPEN_FILES; i++) {
@@ -57,7 +51,7 @@ void openFile(FAT32FileSystem* fs, const char* filename, const char* mode) {
             fs->openFileList[i].fileCluster = fileCluster;
             fs->openFileList[i].offset = 0;
             fs->openFileList[i].inUse = true;
-            // FIXME: Do a deep copy of the filepath into the open file structure
+            getPath(fs->openFileList[i].path, fs);
             printf("File opened: %s at cluster %u\n", formattedName, getCurrCluster(fs));
             printf("File opened: %s at cluster %u\n", formattedName, fileCluster);
             printf("File '%s' opened successfully in mode %s.\n", filename, mode);
@@ -94,7 +88,6 @@ void closeFile(FAT32FileSystem* fs, const char* filename) {
 void lsof(FAT32FileSystem* fs) {
     bool anyOpen = false;
     printf("Index\tFile Name\t\tMode\t\tOffset\t\tPath\n");
-    char path[256];
 
     for (int i = 0; i < MAX_OPEN_FILES; i++) {
         if (fs->openFileList[i].inUse) {
@@ -108,14 +101,13 @@ void lsof(FAT32FileSystem* fs) {
             }
             // SUPER IMPORTANT BELOW PLZ FIX
 
-
             // Fix the spacing between them also
             printf("%d\t%s\t\t%s\t%d\t\t%s\n",
                 i,                          // Index
                 fs->openFileList[i].filename, // File Name
                 modeDesc,                   // Mode
                 fs->openFileList[i].offset, // Offset
-                path);                      // Path (Static example, replace with dynamic path if available)
+                fs->openFileList[i].path);  // Path (Static example, replace with dynamic path if available)
         }
     }
 
@@ -231,5 +223,19 @@ unsigned int readFile(FAT32FileSystem* fs, unsigned int startCluster, unsigned i
     return bytesRead;
 }
 
+char* getPath(char* path, FAT32FileSystem* fs) {
+    DirEntryList* start = fs->currEntry;
+    while (start->prev != NULL)
+        start = start->prev;
 
+    for (int i = 0; i < fs->currEntry->depth + 1; i++) {
+        strcat(path, start->entry->DIR_Name);
+        if (i != fs->currEntry->depth)
+            strcat(path, "/");
+        if (start->next != NULL)
+            start = start->next;
+    }
+
+    return path;
+}
 

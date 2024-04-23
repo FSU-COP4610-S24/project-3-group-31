@@ -86,7 +86,7 @@ int addDirectoryEntry(FAT32FileSystem* fs, unsigned int directoryCluster, const 
 void freeCluster(FAT32FileSystem* fs, unsigned int clusterNumber);
 unsigned int getCurrCluster(FAT32FileSystem* fs);
 bool goToParent(FAT32FileSystem* fs);
-void updateCurrCluster(FAT32FileSystem* fs, void* clustStart);
+void updateCurrCluster(FAT32FileSystem* fs, DirectoryEntry* curr);
 void formatDirectoryName(char* dest, const char* src);
 DirectoryEntry* makeDirEntry(void* clustStart);
 unsigned int getHILO(DirectoryEntry *entry);

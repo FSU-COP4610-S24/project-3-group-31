@@ -4,11 +4,10 @@
 #include <stdlib.h> 
 #include <string.h>
 
-
 bool cd(FAT32FileSystem* fs, const char* dirname) {
     unsigned char* buffer = (unsigned char*)(malloc(fs->BPB_BytsPerSec * fs->BPB_SecPerClus));
+    DirectoryEntry* newDir= findDirectoryCluster(buffer, dirname);
     readCluster(fs, getCurrCluster(fs), buffer);
-    DirectoryEntry* newDir = findDirectoryCluster(buffer, dirname);
 
     if (newDir == NULL) {
         printf("Directory not found: %s\n", dirname);

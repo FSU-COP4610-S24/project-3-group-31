@@ -95,8 +95,7 @@ DirectoryEntry* findDirectoryCluster(const void* buffer, const char* name) {
     while (*p != 0 && *p != 0xE5) {  // Continue past deleted entries
         if ((p[11] & ATTR_DIRECTORY) && !(p[11] & ATTR_VOLUME_ID)) {
             if (strncmp((const char*)p, formattedName, 11) == 0) {
-                DirectoryEntry* entry = makeDirEntry((void*)p);
-                return entry;
+                return makeDirEntry((void*)p);
             }
         }
         p += 32; // Move to the next directory entry
@@ -241,13 +240,13 @@ bool goToParent(FAT32FileSystem* fs) {
     DirEntryList* temp = fs->currEntry;
     fs->currEntry = fs->currEntry->prev;
     fs->currEntry->next = NULL;
+    // Commenting out the line below fixes SIGABRT issue, but will this not create a memory leak?
     free(temp->entry);
     free(temp);
     return true;
 }
 
-void updateCurrCluster(FAT32FileSystem* fs, void* clustStart) {
-    DirectoryEntry* curr = makeDirEntry(clustStart);
+void updateCurrCluster(FAT32FileSystem* fs, DirectoryEntry* curr) {
     DirEntryList* currNode = malloc(sizeof(DirEntryList));
     currNode->entry = curr;
     currNode->next = NULL;
@@ -259,7 +258,9 @@ void updateCurrCluster(FAT32FileSystem* fs, void* clustStart) {
 
 DirectoryEntry* makeDirEntry(void* clustStart){
     DirectoryEntry* entry = malloc(sizeof(DirectoryEntry));
-    entry = (DirectoryEntry*)clustStart;
+    if (entry != NULL) {
+        memcpy(entry, clustStart, sizeof(DirectoryEntry));
+    }
     return entry;
 }
 
@@ -272,6 +273,8 @@ unsigned int getHILO(DirectoryEntry* entry) {
 DirEntryList* establishRoot(FAT32FileSystem* fs)
 {
     DirEntryList* rootDir = malloc(sizeof(DirectoryEntry));
+    DirectoryEntry* dirEntry = malloc(sizeof(DirectoryEntry));
+    rootDir->entry = dirEntry;
     strcpy(rootDir->entry->DIR_Name, "fat32.img");   // replace with filename
     rootDir->entry->DIR_FstClusHI = (fs->BPB_RootClus >> 16) & 0xFFFF;
     rootDir->entry->DIR_FstClusLO = (fs->BPB_RootClus) & 0xFFFF;
