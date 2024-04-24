@@ -10,7 +10,7 @@ void writeHandler(FAT32FileSystem* fs, char* filename, char* string) {
     // readCluster(fs, getCurrCluster(fs), buffer);
     char formattedName[12];
     OpenFileEntry* fileEntry = NULL;
-    unsigned int bytesAdded = 0;
+    unsigned int bytesAdded;
     formatDirectoryName(formattedName, filename);
 
     for (int i = 0; i < MAX_OPEN_FILES; i++)
@@ -57,16 +57,26 @@ unsigned int writeFile(FAT32FileSystem* fs, OpenFileEntry* file, char* string) {
     // Update the filesize in memory
     file->fileSize += bytes;
 
-    /*
+    
     // It is essential to modify the filesize field of the file's metadata, or else it will be
     // unable to open properly after closing. This will be done eventually.
-    DirectoryEntry* newDir = findDirectoryCluster(buffer, filename, false);
-    if (newDir == null) {
-        printf("The bytes were written, but findDirectoryCluster() couldn't locate the file to update its size. This is a bug.\n");
+    unsigned int parentHILO = getHILO(fs->currEntry->entry);
+    unsigned int offset_from_parent_cluster = 0;
+
+    readCluster(fs, parentHILO, buffer);
+    DirectoryEntry* newDir = (DirectoryEntry*)buffer;
+    
+    while (newDir->DIR_FstClusLO != (file->fileCluster & 0xFFFF)) {
+        offset_from_parent_cluster += 32;
+        newDir++;
     }
 
     newDir->DIR_FileSize += bytes;
-    */
+    fseek(fs->imageFile, getClusterOffset(fs, parentHILO) + offset_from_parent_cluster + 28, SEEK_SET);
+    if (fwrite(&(newDir->DIR_FileSize), sizeof(unsigned int), 1, fs->imageFile) != 1) {
+        printf("Error writing new file size to filesystem image file.\n");
+        return 0;
+    }
 
     return bytes;
 }

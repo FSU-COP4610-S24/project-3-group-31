@@ -229,6 +229,7 @@ unsigned int readFile(FAT32FileSystem* fs, unsigned int startCluster, unsigned i
 char* getPath(char* path, FAT32FileSystem* fs) {
     DirEntryList* start = fs->currEntry;
     char buffer[12];
+    strcpy(path,"");
     while (start->prev != NULL)
         start = start->prev;
 
