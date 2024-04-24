@@ -62,7 +62,6 @@ unsigned int writeFile(FAT32FileSystem* fs, OpenFileEntry* file, char* string) {
     // unable to open properly after closing. This will be done eventually.
     unsigned int parentHILO = getHILO(fs->currEntry->entry);
     unsigned int offset_from_parent_cluster = 0;
-    unsigned int *newSize = malloc(sizeof(unsigned int));
 
     readCluster(fs, parentHILO, buffer);
     DirectoryEntry* newDir = (DirectoryEntry*)buffer;
@@ -73,13 +72,11 @@ unsigned int writeFile(FAT32FileSystem* fs, OpenFileEntry* file, char* string) {
     }
 
     newDir->DIR_FileSize += bytes;
-    *newSize = bytes;
-    fseek(fs->imageFile, parentHILO + offset_from_parent_cluster + 28, SEEK_SET);
-    if (fwrite(newSize, 4, 1, fs->imageFile) != 1) {
+    fseek(fs->imageFile, getClusterOffset(fs, parentHILO) + offset_from_parent_cluster + 28, SEEK_SET);
+    if (fwrite(&(newDir->DIR_FileSize), sizeof(unsigned int), 1, fs->imageFile) != 1) {
         printf("Error writing new file size to filesystem image file.\n");
         return 0;
     }
 
-    free(newSize);
     return bytes;
 }
